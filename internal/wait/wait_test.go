@@ -21,7 +21,7 @@ func TestWaitUntilReady_ReadyHTTP(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 	go func() { _ = server.ListenAndServe() }()
-	defer server.Close()
+	defer server.Close() // nolint:errcheck
 
 	checker, err := checker.NewChecker(checker.HTTP, "HTTPServer", "http://localhost:9082/ready")
 	if err != nil {
@@ -55,7 +55,7 @@ func TestWaitUntilReady_HTTPFailsInitially(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 	go func() { _ = server.ListenAndServe() }()
-	defer server.Close()
+	defer server.Close() // nolint:errcheck
 
 	checker, err := checker.NewChecker(checker.HTTP, "HTTPServer", "http://localhost:9083/fail")
 	if err != nil {
@@ -89,7 +89,7 @@ func TestWaitUntilReady_HTTPContextCanceled(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 	go func() { _ = server.ListenAndServe() }()
-	defer server.Close()
+	defer server.Close() // nolint:errcheck
 
 	checker, err := checker.NewChecker(checker.HTTP, "HTTPServer", "http://localhost:9084/canceled")
 	if err != nil {
@@ -121,7 +121,7 @@ func TestWaitUntilReady_ReadyTCP(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create TCP server: %v", err)
 	}
-	defer ln.Close()
+	defer ln.Close() // nolint:errcheck
 
 	checker, err := checker.NewChecker(checker.TCP, "TCPServer", "localhost:9085")
 	if err != nil {
@@ -160,7 +160,7 @@ func TestWaitUntilReady_TCPFailsInitially(t *testing.T) {
 	}()
 	defer func() {
 		if ln != nil {
-			ln.Close()
+			ln.Close() // nolint:errcheck
 		}
 	}()
 

@@ -23,12 +23,12 @@ func (c *TCPChecker) Check(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	defer conn.Close()
+	defer conn.Close() // nolint:errcheck
 	return nil
 }
 
 // newTCPChecker creates a new TCPChecker with functional options.
-func newTCPChecker(name, address string, opts ...Option) (*TCPChecker, error) {
+func newTCPChecker(name, address string, opts ...Option) (*TCPChecker, error) { // nolint:unparam
 	checker := &TCPChecker{
 		name:    name,
 		address: address,

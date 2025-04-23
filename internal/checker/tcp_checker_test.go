@@ -16,7 +16,7 @@ func TestNewTCPChecker_Valid(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to start TCP server: %q", err)
 	}
-	defer ln.Close()
+	defer ln.Close() // nolint:errcheck
 
 	checker, err := newTCPChecker("example", ln.Addr().String(), WithTCPTimeout(1*time.Second))
 	assert.NoError(t, err)
@@ -33,7 +33,7 @@ func TestTCPChecker_ValidConnection(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to start TCP server: %q", err)
 	}
-	defer ln.Close()
+	defer ln.Close() // nolint:errcheck
 
 	checker, err := newTCPChecker("example", ln.Addr().String(), WithTCPTimeout(1*time.Second))
 	assert.NoError(t, err)
@@ -73,7 +73,7 @@ func TestTCPChecker_Timeout(t *testing.T) {
 	t.Parallel()
 
 	ln, err := net.Listen("tcp", "127.0.0.1:7082")
-	defer ln.Close()
+	defer ln.Close() // nolint:errcheck,staticcheck
 	assert.NoError(t, err)
 
 	// Simulate a timeout by setting an impossibly short timeout

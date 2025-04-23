@@ -64,7 +64,7 @@ func ParseFlags(args []string, version string, w io.Writer) (*ParsedFlags, error
 
 	// Parse known flags
 	if err := fs.Parse(unknownArgs); err != nil {
-		return nil, fmt.Errorf("Flag parsing error: %s", err.Error())
+		return nil, fmt.Errorf("flag parsing error: %s", err.Error())
 	}
 
 	// Handle special flags (e.g., --help or --version)
@@ -136,12 +136,12 @@ func setupDynamicFlags() *dynflags.DynFlags {
 // setupUsage sets the custom usage function.
 func setupUsage(fs *flag.FlagSet, df *dynflags.DynFlags) {
 	fs.Usage = func() {
-		fmt.Fprintf(fs.Output(), "Usage: %s [FLAGS] [DYNAMIC FLAGS..]\n", strings.ToLower(fs.Name()))
+		fmt.Fprintf(fs.Output(), "Usage: %s [FLAGS] [DYNAMIC FLAGS..]\n", strings.ToLower(fs.Name())) // nolint:errcheck
 
-		fmt.Fprintln(fs.Output(), "\nGlobal Flags:")
+		fmt.Fprintln(fs.Output(), "\nGlobal Flags:") // nolint:errcheck
 		fs.PrintDefaults()
 
-		fmt.Fprintln(fs.Output(), "\nDynamic Flags:")
+		fmt.Fprintln(fs.Output(), "\nDynamic Flags:") // nolint:errcheck
 		df.PrintDefaults()
 	}
 }

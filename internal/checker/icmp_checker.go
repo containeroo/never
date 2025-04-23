@@ -37,7 +37,7 @@ func (c *ICMPChecker) Check(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to listen for ICMP packets: %w", err)
 	}
-	defer conn.Close()
+	defer conn.Close() // nolint:errcheck
 
 	id := uint16(os.Getpid() & 0xffff)                       // Create a unique identifier
 	seq := uint16(atomic.AddUint32(new(uint32), 1) & 0xffff) // Create a unique sequence number

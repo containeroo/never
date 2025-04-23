@@ -227,7 +227,7 @@ func TestICMPv4_ListenPacket(t *testing.T) {
 		assert.NotNil(t, conn)
 
 		// Clean up the connection
-		defer conn.Close()
+		defer conn.Close() // nolint:errcheck
 	})
 
 	t.Run("Invalid Network", func(t *testing.T) {
@@ -430,7 +430,7 @@ func TestICMPv6_ListenPacket(t *testing.T) {
 		assert.NotNil(t, conn)
 
 		// Clean up the connection
-		defer conn.Close()
+		defer conn.Close() // nolint:errcheck
 	})
 
 	t.Run("Invalid Network", func(t *testing.T) {

@@ -26,7 +26,7 @@ func Run(ctx context.Context, version string, args []string, output io.Writer) e
 	parsedFlags, err := config.ParseFlags(args, version, output)
 	if err != nil {
 		if errors.Is(err, &config.HelpRequested{}) {
-			fmt.Fprint(output, err.Error())
+			fmt.Fprint(output, err.Error()) // nolint:errcheck
 			return nil
 		}
 		return fmt.Errorf("configuration error: %w", err)

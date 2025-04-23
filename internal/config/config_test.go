@@ -64,7 +64,7 @@ func TestParseFlags(t *testing.T) {
 		_, err := ParseFlags(args, "1.0.0", &output)
 		assert.Error(t, err)
 
-		assert.EqualError(t, err, "Flag parsing error: invalid argument \"invalid\" for \"--default-interval\" flag: time: invalid duration \"invalid\"")
+		assert.EqualError(t, err, "flag parsing error: invalid argument \"invalid\" for \"--default-interval\" flag: time: invalid duration \"invalid\"")
 	})
 }
 

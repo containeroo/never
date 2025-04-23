@@ -59,7 +59,7 @@ func TestICMPCheckerCheckSuccess(t *testing.T) {
 			return nil
 		},
 		NetworkFunc: func() string {
-			return "ip4:icmp"
+			return "ip4:icmp" // nolint:goconst
 		},
 		ListenPacketFunc: func(ctx context.Context, network, address string) (net.PacketConn, error) {
 			return &testutils.MockPacketConn{}, nil
@@ -86,7 +86,7 @@ func TestICMPCheckerCheckResolveError(t *testing.T) {
 
 	mockProtocol := &testutils.MockProtocol{
 		NetworkFunc: func() string {
-			return "ip4:icmp"
+			return "ip4:icmp" // nolint:goconst
 		},
 	}
 
@@ -114,7 +114,7 @@ func TestICMPCheckerCheckWriteError(t *testing.T) {
 			return []byte{}, nil
 		},
 		NetworkFunc: func() string {
-			return "ip4:icmp"
+			return "ip4:icmp" // nolint:goconst
 		},
 		ListenPacketFunc: func(ctx context.Context, network, address string) (net.PacketConn, error) {
 			return &testutils.MockPacketConn{
@@ -148,7 +148,7 @@ func TestICMPCheckerCheckListenPacketError(t *testing.T) {
 			return []byte{}, nil
 		},
 		NetworkFunc: func() string {
-			return "ip4:icmp"
+			return "ip4:icmp" // nolint:goconst
 		},
 		ListenPacketFunc: func(ctx context.Context, network, address string) (net.PacketConn, error) {
 			return nil, fmt.Errorf("mock listen packet error")
@@ -182,7 +182,7 @@ func TestICMPCheckerCheckMakeRequestError(t *testing.T) {
 			return fmt.Errorf("mock validation error")
 		},
 		NetworkFunc: func() string {
-			return "ip4:icmp"
+			return "ip4:icmp" // nolint:goconst
 		},
 		ListenPacketFunc: func(ctx context.Context, network, address string) (net.PacketConn, error) {
 			return &testutils.MockPacketConn{}, nil
@@ -213,7 +213,7 @@ func TestICMPCheckerCheckWriteDeadlineError(t *testing.T) {
 			return []byte{}, nil
 		},
 		NetworkFunc: func() string {
-			return "ip4:icmp"
+			return "ip4:icmp" // nolint:goconst
 		},
 		SetDeadlineFunc: func(t time.Time) error {
 			return fmt.Errorf("mock write deadline error")
@@ -252,7 +252,7 @@ func TestICMPCheckerCheckReadError(t *testing.T) {
 			return []byte{}, nil
 		},
 		NetworkFunc: func() string {
-			return "ip4:icmp"
+			return "ip4:icmp" // nolint:goconst
 		},
 		ListenPacketFunc: func(ctx context.Context, network, address string) (net.PacketConn, error) {
 			return &testutils.MockPacketConn{
@@ -289,7 +289,7 @@ func TestICMPCheckerSetWriteDeadlineError(t *testing.T) {
 			return nil
 		},
 		NetworkFunc: func() string {
-			return "ip4:icmp"
+			return "ip4:icmp" // nolint:goconst
 		},
 		ListenPacketFunc: func(ctx context.Context, network, address string) (net.PacketConn, error) {
 			return &testutils.MockPacketConn{
@@ -326,7 +326,7 @@ func TestICMPCheckerSetReadDeadlineError(t *testing.T) {
 			return nil
 		},
 		NetworkFunc: func() string {
-			return "ip4:icmp"
+			return "ip4:icmp" // nolint:goconst
 		},
 		ListenPacketFunc: func(ctx context.Context, network, address string) (net.PacketConn, error) {
 			return &testutils.MockPacketConn{
@@ -363,7 +363,7 @@ func TestICMPCheckerValidateReplyError(t *testing.T) {
 			return fmt.Errorf("mock validation error")
 		},
 		NetworkFunc: func() string {
-			return "ip4:icmp"
+			return "ip4:icmp" // nolint:goconst
 		},
 		ListenPacketFunc: func(ctx context.Context, network, address string) (net.PacketConn, error) {
 			return &testutils.MockPacketConn{}, nil

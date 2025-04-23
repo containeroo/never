@@ -12,6 +12,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// fake version for testing
+const version string = "0.0.0"
+
 func TestRunHTTPReady(t *testing.T) {
 	t.Parallel()
 
@@ -28,13 +31,11 @@ func TestRunHTTPReady(t *testing.T) {
 	})
 
 	go func() { _ = server.ListenAndServe() }()
-	defer server.Close()
+	defer server.Close() // nolint:errcheck
 
 	var output strings.Builder
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
-
-	version := "0.0.0"
 
 	err := Run(ctx, version, args, &output)
 	assert.NoError(t, err)
@@ -57,13 +58,12 @@ func TestRunTCPReady(t *testing.T) {
 
 	listener, err := net.Listen("tcp", "localhost:8082")
 	assert.NoError(t, err)
-	defer listener.Close()
+	defer listener.Close() // nolint:errcheck
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
 	var output strings.Builder
-	version := "0.0.0"
 
 	err = Run(ctx, version, args, &output)
 	assert.NoError(t, err)
@@ -83,7 +83,6 @@ func TestRunConfigErrorMissingTarget(t *testing.T) {
 	defer cancel()
 
 	var output bytes.Buffer
-	version := "0.0.0"
 
 	err := Run(ctx, version, args, &output)
 
@@ -105,12 +104,11 @@ func TestRunConfigErrorUnsupportedCheckType(t *testing.T) {
 	defer cancel()
 
 	var output bytes.Buffer
-	version := "0.0.0"
 
 	err := Run(ctx, version, args, &output)
 
 	assert.Error(t, err)
-	assert.EqualError(t, err, "configuration error: Flag parsing error: unknown flag: --target.unsupported.name")
+	assert.EqualError(t, err, "configuration error: flag parsing error: unknown flag: --target.unsupported.name")
 }
 
 func TestRunConfigErrorInvalidHeaders(t *testing.T) {
@@ -128,7 +126,6 @@ func TestRunConfigErrorInvalidHeaders(t *testing.T) {
 	defer cancel()
 
 	var output bytes.Buffer
-	version := "0.0.0"
 
 	err := Run(ctx, version, args, &output)
 
@@ -148,12 +145,11 @@ func TestRunParseError(t *testing.T) {
 	defer cancel()
 
 	var output bytes.Buffer
-	version := "0.0.0"
 
 	err := Run(ctx, version, args, &output)
 
 	assert.Error(t, err)
-	assert.EqualError(t, err, "configuration error: Flag parsing error: unknown flag: --invalid")
+	assert.EqualError(t, err, "configuration error: flag parsing error: unknown flag: --invalid")
 }
 
 func TestRunShowVersion(t *testing.T) {
@@ -169,7 +165,6 @@ func TestRunShowVersion(t *testing.T) {
 	defer cancel()
 
 	var output bytes.Buffer
-	version := "0.0.0"
 
 	err := Run(ctx, version, args, &output)
 

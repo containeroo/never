@@ -46,7 +46,7 @@ func (c *HTTPChecker) Check(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("HTTP request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() // nolint:errcheck
 
 	if slices.Contains(c.expectedStatusCodes, resp.StatusCode) {
 		return nil
@@ -56,7 +56,7 @@ func (c *HTTPChecker) Check(ctx context.Context) error {
 }
 
 // newHTTPChecker creates a new HTTPChecker with functional options.
-func newHTTPChecker(name, address string, opts ...Option) (*HTTPChecker, error) {
+func newHTTPChecker(name, address string, opts ...Option) (*HTTPChecker, error) { // nolint:unparam
 	checker := &HTTPChecker{
 		name:                name,
 		address:             address,
