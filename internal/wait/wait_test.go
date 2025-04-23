@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/containeroo/portpatrol/internal/checker"
+	"github.com/containeroo/never/internal/checker"
 )
 
 // TestWaitUntilReady_ReadyHTTP ensures WaitUntilReady returns success when the HTTP target is ready.

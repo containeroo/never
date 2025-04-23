@@ -86,7 +86,7 @@ func ParseFlags(args []string, version string, w io.Writer) (*ParsedFlags, error
 
 // setupGlobalFlags sets up global application flags.
 func setupGlobalFlags() *flag.FlagSet {
-	fs := flag.NewFlagSet("PortPatrol", flag.ContinueOnError)
+	fs := flag.NewFlagSet("never", flag.ContinueOnError)
 	fs.SortFlags = false
 
 	fs.Duration(paramDefaultInterval, defaultCheckInterval, "Default interval between checks. Can be overridden for each target.")
@@ -99,7 +99,7 @@ func setupGlobalFlags() *flag.FlagSet {
 // setupDynamicFlags sets up dynamic flags for HTTP, TCP, ICMP.
 func setupDynamicFlags() *dynflags.DynFlags {
 	df := dynflags.New(dynflags.ContinueOnError)
-	df.Epilog("For more information, see https://github.com/containeroo/portpatrol")
+	df.Epilog("For more information, see https://github.com/containeroo/never")
 	df.SortGroups = true
 	df.SortFlags = true
 

@@ -9,10 +9,10 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/containeroo/portpatrol/internal/config"
-	"github.com/containeroo/portpatrol/internal/factory"
-	"github.com/containeroo/portpatrol/internal/logging"
-	"github.com/containeroo/portpatrol/internal/wait"
+	"github.com/containeroo/never/internal/config"
+	"github.com/containeroo/never/internal/factory"
+	"github.com/containeroo/never/internal/logging"
+	"github.com/containeroo/never/internal/wait"
 	"golang.org/x/sync/errgroup"
 )
 

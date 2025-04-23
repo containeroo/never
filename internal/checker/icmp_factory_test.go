@@ -7,7 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/containeroo/portpatrol/internal/testutils"
+	"github.com/containeroo/never/internal/testutils"
 
 	"golang.org/x/net/icmp"
 	"golang.org/x/net/ipv4"

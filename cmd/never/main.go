@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/containeroo/portpatrol/internal/app"
+	"github.com/containeroo/never/internal/app"
 )
 
 const version string = "v0.5.13"

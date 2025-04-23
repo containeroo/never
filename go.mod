@@ -1,4 +1,4 @@
-module github.com/containeroo/portpatrol
+module github.com/containeroo/never
 
 go 1.23.5
 

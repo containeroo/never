@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/containeroo/dynflags"
-	"github.com/containeroo/portpatrol/internal/factory"
+	"github.com/containeroo/never/internal/factory"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -1,4 +1,4 @@
-project_name: portpatrol
+project_name: never
 version: 2
 
 before:
@@ -6,8 +6,8 @@ before:
     - go mod tidy
 
 builds:
-  - id: portpatrol-build
-    main: ./cmd/portpatrol/main.go
+  - id: never-build
+    main: ./cmd/never/main.go
     env:
       - CGO_ENABLED=0
     goos:
@@ -18,8 +18,8 @@ builds:
 
 dockers:
   - image_templates:
-      - ghcr.io/containeroo/portpatrol:{{ trimprefix .Tag "v" }}-amd64
-      - ghcr.io/containeroo/portpatrol:latest-amd64
+      - ghcr.io/containeroo/never:{{ trimprefix .Tag "v" }}-amd64
+      - ghcr.io/containeroo/never:latest-amd64
     use: buildx
     dockerfile: Dockerfile
     build_flag_templates:
@@ -27,8 +27,8 @@ dockers:
       - --platform=linux/amd64
       - --label=org.opencontainers.image.title={{ .ProjectName }}
       - --label=org.opencontainers.image.description={{ .ProjectName }}
-      - --label=org.opencontainers.image.url=https://github.com/containeroo/portpatrol
-      - --label=org.opencontainers.image.source=https://github.com/containeroo/portpatrol
+      - --label=org.opencontainers.image.url=https://github.com/containeroo/never
+      - --label=org.opencontainers.image.source=https://github.com/containeroo/never
       - --label=org.opencontainers.image.version={{ .Version }}
       - --label=org.opencontainers.image.created={{ time "2006-01-02T15:04:05Z07:00" }}
       - --label=org.opencontainers.image.revision={{ .FullCommit }}
@@ -39,8 +39,8 @@ dockers:
       - cmd
       - internal
   - image_templates:
-      - ghcr.io/containeroo/portpatrol:{{ trimprefix .Tag "v" }}-arm64v8
-      - ghcr.io/containeroo/portpatrol:latest-arm64v8
+      - ghcr.io/containeroo/never:{{ trimprefix .Tag "v" }}-arm64v8
+      - ghcr.io/containeroo/never:latest-arm64v8
     use: buildx
     goarch: arm64
     dockerfile: Dockerfile
@@ -49,8 +49,8 @@ dockers:
       - --platform=linux/arm64/v8
       - --label=org.opencontainers.image.title={{ .ProjectName }}
       - --label=org.opencontainers.image.description={{ .ProjectName }}
-      - --label=org.opencontainers.image.url=https://github.com/containeroo/portpatrol
-      - --label=org.opencontainers.image.source=https://github.com/containeroo/portpatrol
+      - --label=org.opencontainers.image.url=https://github.com/containeroo/never
+      - --label=org.opencontainers.image.source=https://github.com/containeroo/never
       - --label=org.opencontainers.image.version={{ .Version }}
       - --label=org.opencontainers.image.created={{ time "2006-01-02T15:04:05Z07:00" }}
       - --label=org.opencontainers.image.revision={{ .FullCommit }}
@@ -62,11 +62,11 @@ dockers:
       - internal
 
 docker_manifests:
-  - name_template: ghcr.io/containeroo/portpatrol:{{ trimprefix .Tag "v" }}
+  - name_template: ghcr.io/containeroo/never:{{ trimprefix .Tag "v" }}
     image_templates:
-      - ghcr.io/containeroo/portpatrol:{{ trimprefix .Tag "v" }}-amd64
-      - ghcr.io/containeroo/portpatrol:{{ trimprefix .Tag "v" }}-arm64v8
-  - name_template: ghcr.io/containeroo/portpatrol:latest
+      - ghcr.io/containeroo/never:{{ trimprefix .Tag "v" }}-amd64
+      - ghcr.io/containeroo/never:{{ trimprefix .Tag "v" }}-arm64v8
+  - name_template: ghcr.io/containeroo/never:latest
     image_templates:
-      - ghcr.io/containeroo/portpatrol:latest-amd64
-      - ghcr.io/containeroo/portpatrol:latest-arm64v8
+      - ghcr.io/containeroo/never:latest-amd64
+      - ghcr.io/containeroo/never:latest-arm64v8

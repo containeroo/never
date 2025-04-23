@@ -1,28 +1,38 @@
 <p align="center">
-  <img src=".github/assets/portpatrol.svg" />
+  <img src=".github/assets/never.svg" />
 </p>
 
-# PortPatrol
+# N.E.V.E.R. - Network Endpoint Validation with Endless Retries
 
-`PortPatrol` is a simple Go application that checks if a specified `TCP`, `HTTP` or `ICMP` target is available. It continuously attempts to connect to the specified target at regular intervals until the target becomes available or the program is terminated. Intended to run as a Kubernetes initContainer, `PortPatrol` helps verify whether a dependency is ready. The configuration is done through startup arguments.
-You can check multiple targets at once.
+> **N.E.V.E.R.** (Network Endpoint Validation with Endless Retries) is a lightweight Go application that obsessively checks whether a `TCP`, `HTTP`, or `ICMP` target is reachable.
+> It loops endlessly until the target responds — or until it’s killed.
 
+Designed to run as a **Kubernetes `initContainer`**, `N.E.V.E.R.` ensures your service dependencies are fully up before anything else gets a chance to boot.
+
+## Features
+
+- Continuously retries until the target responds — no backoff, no shame.
+- Supports multiple concurrent targets, each with its own config.
+- Configurable entirely via command-line arguments.
+- Exits with `0` the moment everything is ready.
+
+Whether you're waiting on a `port`, `ping`, or a `200 OK`, `N.E.V.E.R.` backs down never.
 
 ## Command-Line Flags
 
-`PortPatrol` accepts the following command-line flags:
+`never` accepts the following command-line flags:
 
 ### Common Flags
 
-| Flag                  | Type     | Default | Description                                                                                   |
-|-----------------------|----------|---------|-----------------------------------------------------------------------------------------------|
-| `--default-interval`  | duration | `2s`    | Default interval between checks. Can be overridden for each target.                           |
-| `--version`           | bool     | `false` | Show version and exit.                                                                        |
-| `--help`, `-h`        | bool     | `false` | Show help.                                                                                    |
+| Flag                 | Type     | Default | Description                                                         |
+| -------------------- | -------- | ------- | ------------------------------------------------------------------- |
+| `--default-interval` | duration | `2s`    | Default interval between checks. Can be overridden for each target. |
+| `--version`          | bool     | `false` | Show version and exit.                                              |
+| `--help`, `-h`       | bool     | `false` | Show help.                                                          |
 
 ### Target Flags
 
-`PortPatrol` accepts "dynamic" flags that can be defined in the startup arguments.
+`never` accepts "dynamic" flags that can be defined in the startup arguments.
 Use the `--<TYPE>.<IDENTIFIER>.<PROPERTY>=<VALUE>` format to define targets.
 Types are: `http`, `icmp` or `tcp`.
 
@@ -36,7 +46,7 @@ Types are: `http`, `icmp` or `tcp`.
   **Resolvable:** See [Resolving Variables](#resolving-variables) below.
 
   - **`--http.<IDENTIFIER>.interval`** = `duration`
-  The interval between HTTP requests (e.g., `1s`). Overwrites the global `--default-interval`.
+    The interval between HTTP requests (e.g., `1s`). Overwrites the global `--default-interval`.
 
 - **`--http.<IDENTIFIER>.method`** = `string`
   The HTTP method to use (e.g., `GET`, `POST`). Defaults to `GET`.
@@ -111,7 +121,7 @@ HTTP headers values can also be resolved using the same mechanism, (from a envir
 #### Define an HTTP Target
 
 ```sh
-portpatrol \
+never \
   --http.web.address=http://example.com:80 \
   --http.web.method=GET \
   --http.web.expected-status-codes=200,204 \
@@ -124,7 +134,7 @@ portpatrol \
 #### Define Multiple Targets (HTTP and TCP) Running in Parallel
 
 ```sh
-portpatrol \
+never \
   --http.web.address=http://example.com:80 \
   --tcp.db.address=tcp://localhost:5432 \
   --default-interval=10s
@@ -185,7 +195,7 @@ Example:
 
 ```yaml
 - name: wait-for-host
-  image: ghcr.io/containeroo/portpatrol:latest
+  image: ghcr.io/containeroo/never:latest
   env:
     - name: TARGET_ADDRESS
       value: icmp://hostname.domain.com
@@ -308,7 +318,7 @@ Configure your Kubernetes deployment to use this init container:
 ```yaml
 initContainers:
   - name: wait-for-vm
-    image: ghcr.io/containeroo/portpatrol:latest
+    image: ghcr.io/containeroo/never:latest
     args:
       - --icmp.vm.address=hostname.domain.tld
     securityContext: # icmp requires CAP_NET_RAW
@@ -317,7 +327,7 @@ initContainers:
       capabilities:
         add: ["CAP_NET_RAW"]
   - name: wait-for-it
-    image: ghcr.io/containeroo/portpatrol:latest
+    image: ghcr.io/containeroo/never:latest
     args:
       - --target.postgres.address=postgres.default.svc.cluster.local:9000/healthz # use healthz endpoint to check if postgres is ready
       - --target.postgres.method=POST
@@ -331,10 +341,8 @@ initContainers:
     envFrom:
       - secretRef:
           name: bearer-token
-
 ```
 
 ## License
 
 This project is licensed under the Apache License. See the [LICENSE](LICENSE) file for details.
-

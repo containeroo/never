@@ -7,7 +7,7 @@ import (
 
 	"github.com/containeroo/dynflags"
 	"github.com/containeroo/httputils"
-	"github.com/containeroo/portpatrol/internal/checker"
+	"github.com/containeroo/never/internal/checker"
 	"github.com/containeroo/resolver"
 )
 

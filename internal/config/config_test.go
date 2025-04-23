@@ -34,13 +34,13 @@ func TestParseFlags(t *testing.T) {
 		_ = flagSet.Parse([]string{"--help"})
 
 		flagSet.Usage = func() {
-			fmt.Fprintln(&output, "Usage: portpatrol [FLAGS] [DYNAMIC FLAGS..]")
+			fmt.Fprintln(&output, "Usage: never [FLAGS] [DYNAMIC FLAGS..]")
 		}
 
 		err := handleSpecialFlags(flagSet, "1.0.0")
 		assert.Error(t, err)
 		assert.IsType(t, &HelpRequested{}, err)
-		assert.Contains(t, output.String(), "Usage: portpatrol [FLAGS] [DYNAMIC FLAGS..]")
+		assert.Contains(t, output.String(), "Usage: never [FLAGS] [DYNAMIC FLAGS..]")
 	})
 
 	t.Run("Show Version Flag", func(t *testing.T) {
@@ -52,7 +52,7 @@ func TestParseFlags(t *testing.T) {
 		_, err := ParseFlags(args, "1.0.0", &output)
 		assert.Error(t, err)
 		assert.IsType(t, &HelpRequested{}, err)
-		assert.Contains(t, err.Error(), "PortPatrol version 1.0.0")
+		assert.Contains(t, err.Error(), "never version 1.0.0")
 	})
 
 	t.Run("Invalid Duration Flag", func(t *testing.T) {
@@ -116,7 +116,7 @@ func TestSetupUsage(t *testing.T) {
 	flagSet.Usage()
 
 	usageOutput := output.String()
-	assert.Contains(t, usageOutput, "Usage: portpatrol [FLAGS] [DYNAMIC FLAGS..]")
+	assert.Contains(t, usageOutput, "Usage: never [FLAGS] [DYNAMIC FLAGS..]")
 	assert.Contains(t, usageOutput, "Global Flags:")
 	assert.Contains(t, usageOutput, "--default-interval")
 	assert.Contains(t, usageOutput, "Dynamic Flags:")
@@ -134,7 +134,7 @@ func TestHandleSpecialFlags(t *testing.T) {
 		flagSet.SetOutput(&output)
 
 		flagSet.Usage = func() {
-			fmt.Fprintln(&output, "Usage: portpatrol [FLAGS] [DYNAMIC FLAGS..]")
+			fmt.Fprintln(&output, "Usage: never [FLAGS] [DYNAMIC FLAGS..]")
 		}
 
 		args := []string{"--help"}
@@ -154,7 +154,7 @@ func TestHandleSpecialFlags(t *testing.T) {
 		err := handleSpecialFlags(flagSet, "1.0.0")
 		assert.Error(t, err)
 		assert.IsType(t, &HelpRequested{}, err)
-		assert.Contains(t, err.Error(), "PortPatrol version 1.0.0")
+		assert.Contains(t, err.Error(), "never version 1.0.0")
 	})
 
 	t.Run("No Special Flags", func(t *testing.T) {
@@ -185,7 +185,7 @@ func TestGetDurationFlag(t *testing.T) {
 	t.Run("Invalid Duration", func(t *testing.T) {
 		t.Parallel()
 
-		flagSet := pflag.NewFlagSet("portpatrol", pflag.ContinueOnError)
+		flagSet := pflag.NewFlagSet("never", pflag.ContinueOnError)
 		flagSet.String("invalid-flag", "invalid", "Invalid flag")
 		err := flagSet.Set("invalid-flag", "invalid")
 		assert.NoError(t, err)

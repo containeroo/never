@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/containeroo/portpatrol/internal/checker"
+	"github.com/containeroo/never/internal/checker"
 )
 
 // WaitUntilReady continuously attempts to connect to the specified target until it becomes available or the context is canceled.
