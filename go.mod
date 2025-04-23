@@ -1,6 +1,6 @@
 module github.com/containeroo/never
 
-go 1.23.5
+go 1.24
 
 require (
 	github.com/containeroo/dynflags v0.1.0
