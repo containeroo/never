@@ -1,7 +1,6 @@
 package config
 
 import (
-	"bytes"
 	"fmt"
 	"strings"
 	"testing"
@@ -18,9 +17,8 @@ func TestParseFlags(t *testing.T) {
 		t.Parallel()
 
 		args := []string{"--default-interval=5s"}
-		var output strings.Builder
 
-		parsedFlags, err := ParseFlags(args, "1.0.0", &output)
+		parsedFlags, err := ParseFlags(args, "1.0.0")
 		assert.NoError(t, err)
 		assert.Equal(t, 5*time.Second, parsedFlags.DefaultCheckInterval)
 	})
@@ -47,9 +45,8 @@ func TestParseFlags(t *testing.T) {
 		t.Parallel()
 
 		args := []string{"--version"}
-		var output bytes.Buffer
 
-		_, err := ParseFlags(args, "1.0.0", &output)
+		_, err := ParseFlags(args, "1.0.0")
 		assert.Error(t, err)
 		assert.IsType(t, &HelpRequested{}, err)
 		assert.Contains(t, err.Error(), "never version 1.0.0")
@@ -59,9 +56,8 @@ func TestParseFlags(t *testing.T) {
 		t.Parallel()
 
 		args := []string{"--default-interval=invalid"}
-		var output bytes.Buffer
 
-		_, err := ParseFlags(args, "1.0.0", &output)
+		_, err := ParseFlags(args, "1.0.0")
 		assert.Error(t, err)
 
 		assert.EqualError(t, err, "flag parsing error: invalid argument \"invalid\" for \"--default-interval\" flag: time: invalid duration \"invalid\"")

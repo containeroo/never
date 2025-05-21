@@ -23,7 +23,7 @@ func Run(ctx context.Context, version string, args []string, output io.Writer) e
 	defer cancel()
 
 	// Parse command-line flags
-	parsedFlags, err := config.ParseFlags(args, version, output)
+	parsedFlags, err := config.ParseFlags(args, version)
 	if err != nil {
 		if errors.Is(err, &config.HelpRequested{}) {
 			fmt.Fprint(output, err.Error()) // nolint:errcheck

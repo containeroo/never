@@ -3,7 +3,6 @@ package config
 import (
 	"bytes"
 	"fmt"
-	"io"
 	"strings"
 	"time"
 
@@ -43,14 +42,10 @@ type ParsedFlags struct {
 }
 
 // ParseFlags parses command-line arguments and returns the parsed flags.
-func ParseFlags(args []string, version string, w io.Writer) (*ParsedFlags, error) {
+func ParseFlags(args []string, version string) (*ParsedFlags, error) {
 	// Create global fs and dynamic flags
 	fs := setupGlobalFlags()
 	df := setupDynamicFlags()
-
-	// Set output for flagSet and dynFlags
-	fs.SetOutput(w)
-	df.SetOutput(w)
 
 	// Set up custom usage function
 	setupUsage(fs, df)
