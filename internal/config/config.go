@@ -136,12 +136,16 @@ func setupDynamicFlags() *dynflags.DynFlags {
 // setupUsage sets the custom usage function.
 func setupUsage(fs *flag.FlagSet, df *dynflags.DynFlags) {
 	fs.Usage = func() {
-		fmt.Fprintf(fs.Output(), "Usage: %s [FLAGS] [DYNAMIC FLAGS..]\n", strings.ToLower(fs.Name())) // nolint:errcheck
+		out := fs.Output() // capture writer ONCE
 
-		fmt.Fprintln(fs.Output(), "\nGlobal Flags:") // nolint:errcheck
+		fmt.Fprintf(out, "Usage: %s [FLAGS] [DYNAMIC FLAGS..]\n", strings.ToLower(fs.Name())) // nolint:errcheck
+
+		fmt.Fprintln(out, "\nGlobal Flags:") // nolint:errcheck
+		fs.SetOutput(out)
 		fs.PrintDefaults()
 
-		fmt.Fprintln(fs.Output(), "\nDynamic Flags:") // nolint:errcheck
+		fmt.Fprintln(out, "\nDynamic Flags:") // nolint:errcheck
+		df.SetOutput(out)
 		df.PrintDefaults()
 	}
 }
