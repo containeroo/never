@@ -41,7 +41,7 @@ vet: ## Run go vet against code.
 	go vet ./...
 
 .PHONY: test
-test: ## Run all unit tests
+test: fmt vet ## Run unit tests.
 	go test -coverprofile=coverage.out -covermode=atomic -count=1 -parallel=4 -timeout=5m ./...
 
 .PHONY: cover
