@@ -26,12 +26,6 @@ func (e *HelpRequested) Error() string {
 	return e.Message
 }
 
-// Is returns true if the error is a HelpRequested error.
-func (e *HelpRequested) Is(target error) bool {
-	_, ok := target.(*HelpRequested)
-	return ok
-}
-
 // ParsedFlags holds the parsed command-line flags.
 type ParsedFlags struct {
 	ShowHelp             bool
