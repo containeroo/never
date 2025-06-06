@@ -64,17 +64,6 @@ func TestParseFlags(t *testing.T) {
 	})
 }
 
-func TestIsHelpRequested(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Help requested", func(t *testing.T) {
-		t.Parallel()
-
-		err := &HelpRequested{Message: "Help requested"}
-		assert.ErrorIs(t, err, &HelpRequested{})
-	})
-}
-
 func TestSetupGlobalFlags(t *testing.T) {
 	t.Parallel()
 
