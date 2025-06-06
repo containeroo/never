@@ -15,5 +15,5 @@ RUN go build -ldflags="$LDFLAGS" -o /never ./cmd/never/main.go
 
 FROM gcr.io/distroless/static:nonroot
 COPY --from=builder /never /
-USER nonroot:nonroot
+USER 65532:65532
 ENTRYPOINT ["/never"]
