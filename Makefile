@@ -64,6 +64,7 @@ lint-fix: golangci-lint ## Run golangci-lint linter and perform fixes.
 
 # Find the latest tag (with prefix filter if defined, default to 0.0.0 if none found)
 # Lazy evaluation ensures fresh values on every run
+VERSION_PREFIX ?= v
 LATEST_TAG = $(shell git tag --list "$(VERSION_PREFIX)*" --sort=-v:refname | head -n 1)
 VERSION = $(shell [ -n "$(LATEST_TAG)" ] && echo $(LATEST_TAG) | sed "s/^$(VERSION_PREFIX)//" || echo "0.0.0")
 
