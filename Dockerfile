@@ -1,6 +1,17 @@
-FROM golang:1.24-alpine AS builder
+FROM golang:1.24-alpine as builder
+
+ARG LDFLAGS="-s -w"
+ENV CGO_ENABLED=0
+
+WORKDIR /workspace
+COPY go.mod go.sum ./
+# cache deps before building and copying source so that we don't need to re-download as much
+# and so that source changes don't invalidate our downloaded layer
+RUN go mod download
+
 COPY . .
-RUN CGO_ENABLED=0 GO111MODULE=on go build -a -installsuffix nocgo -o /never ./cmd/never
+
+RUN go build -ldflags="$LDFLAGS" -o /never ./cmd/never/main.go
 
 FROM gcr.io/distroless/static:nonroot
 COPY --from=builder /never /
