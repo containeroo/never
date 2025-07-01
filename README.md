@@ -4,6 +4,16 @@
 
 # N.E.V.E.R. - Network Endpoint Validation with Endless Retries
 
+[![Go Report Card](https://goreportcard.com/badge/github.com/containeroo/never?style=flat-square)](https://goreportcard.com/report/github.com/containeroo/never)
+[![Go Doc](https://img.shields.io/badge/godoc-reference-blue.svg?style=flat-square)](https://godoc.org/github.com/containeroo/never)
+[![Release](https://img.shields.io/github/release/containeroo/never.svg?style=flat-square)](https://github.com/containeroo/never/releases/latest)
+[![GitHub tag](https://img.shields.io/github/tag/containeroo/never.svg?style=flat-square)](https://github.com/containeroo/never/releases/latest)
+![Tests](https://github.com/containeroo/never/actions/workflows/tests.yml/badge.svg)
+[![Build](https://github.com/containeroo/never/actions/workflows/release.yml/badge.svg)](https://github.com/containeroo/never/actions/workflows/release.yml)
+[![license](https://img.shields.io/github/license/containeroo/never.svg?style=flat-square)](LICENSE)
+
+---
+
 > **N.E.V.E.R.** (Network Endpoint Validation with Endless Retries) is a lightweight Go application that obsessively checks whether a `TCP`, `HTTP`, or `ICMP` target is reachable.
 > It loops endlessly until the target responds — or until it’s killed.
 
