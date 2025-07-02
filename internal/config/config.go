@@ -2,7 +2,9 @@ package config
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
+	"io"
 	"strings"
 	"time"
 
@@ -172,4 +174,14 @@ func getDurationFlag(flagSet *flag.FlagSet, name string, defaultValue time.Durat
 	}
 
 	return val, nil
+}
+
+// IsHelpRequested checks if the error is a HelpRequested sentinel and prints it.
+func IsHelpRequested(err error, w io.Writer) bool {
+	var helpErr *HelpRequested
+	if errors.As(err, &helpErr) {
+		fmt.Fprint(w, helpErr.Error()) // nolint:errcheck
+		return true
+	}
+	return false
 }
