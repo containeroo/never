@@ -5,10 +5,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/containeroo/dynflags"
 	"github.com/containeroo/httputils"
 	"github.com/containeroo/never/internal/checker"
 	"github.com/containeroo/resolver"
+	"github.com/containeroo/tinyflags"
 )
 
 // CheckerWithInterval represents a checker with its interval.
@@ -18,94 +18,77 @@ type CheckerWithInterval struct {
 }
 
 // BuildCheckers creates a list of CheckerWithInterval from the parsed dynflags configuration.
-func BuildCheckers(dynFlags *dynflags.DynFlags, defaultInterval time.Duration) ([]CheckerWithInterval, error) {
+func BuildCheckers(dynamicGroups []*tinyflags.DynamicGroup, defaultInterval time.Duration) ([]CheckerWithInterval, error) {
 	var checkers []CheckerWithInterval
 
-	// Iterate over all parsed groups
-	for parentName, childGroups := range dynFlags.Parsed().Groups() {
-		checkType, err := checker.ParseCheckType(parentName)
+	for _, group := range dynamicGroups {
+		checkType, err := checker.ParseCheckType(group.Name())
 		if err != nil {
-			return nil, fmt.Errorf("invalid check type '%s': %w", parentName, err)
+			return nil, err
 		}
 
-		// Process each parsed group (child) under the parent group
-		for _, group := range childGroups {
-			address, err := group.GetString("address")
+		for _, id := range group.Instances() {
+			address := tinyflags.GetOrDefaultDynamic[string](group, id, "address")
+			resolvedAddr, err := resolver.ResolveVariable(address)
 			if err != nil {
-				return nil, fmt.Errorf("missing address for %s checker: %w", parentName, err)
+				return nil, fmt.Errorf("invalid variable in address: %w", err)
 			}
 
-			resolvedAddress, err := resolver.ResolveVariable(address)
-			if err != nil {
-				return nil, fmt.Errorf("failed to resolve variable in address: %w", err)
-			}
-
-			// Default interval for the checker
 			interval := defaultInterval
-			if customInterval, err := group.GetDuration("interval"); err == nil {
-				interval = customInterval
+			if v, _ := tinyflags.GetDynamic[time.Duration](group, id, "interval"); v != 0 {
+				interval = v
 			}
 
-			// Prepare options based on the checker type
 			var opts []checker.Option
 
 			switch checkType {
 			case checker.HTTP:
-				if method, err := group.GetString("method"); err == nil {
-					opts = append(opts, checker.WithHTTPMethod(method))
-				}
+				method := tinyflags.GetOrDefaultDynamic[string](group, id, "method")
+				opts = append(opts, checker.WithHTTPMethod(method))
 
-				allowDuplicateHeaders, _ := group.GetBool("allow-duplicate-headers") // Type is checked when parsing
-				if headers, err := group.GetStringSlices("header"); err == nil {
-					headersMap, err := createHTTPHeadersMap(headers, allowDuplicateHeaders)
-					if err != nil {
-						return nil, fmt.Errorf("invalid \"--%s.%s.header\": %w", parentName, group.Name, err)
-					}
-					opts = append(opts, checker.WithHTTPHeaders(headersMap))
+				headers := tinyflags.GetOrDefaultDynamic[[]string](group, id, "header")
+				allowDup := tinyflags.GetOrDefaultDynamic[bool](group, id, "allow-duplicate-headers")
+				headersMap, err := createHTTPHeadersMap(headers, allowDup)
+				if err != nil {
+					return nil, fmt.Errorf("invalid \"--%s.%s.header\": %w", group.Name(), id, err)
 				}
+				opts = append(opts, checker.WithHTTPHeaders(headersMap))
 
-				if allowedStatusCodes, err := group.GetString("expected-status-codes"); err == nil {
-					statusCodes, err := httputils.ParseStatusCodes(allowedStatusCodes)
-					if err != nil {
-						return nil, fmt.Errorf("invalid \"--%s.%s.expected-status-codes\": %w", parentName, group.Name, err)
-					}
-
-					opts = append(opts, checker.WithExpectedStatusCodes(statusCodes))
+				codeStr := tinyflags.GetOrDefaultDynamic[string](group, id, "expected-status-codes")
+				codes, err := httputils.ParseStatusCodes(codeStr)
+				if err != nil {
+					return nil, fmt.Errorf("invalid --%s.%s.expected-status-codes: %w", group.Name(), id, err)
 				}
+				opts = append(opts, checker.WithExpectedStatusCodes(codes))
 
-				if skipTLS, err := group.GetBool("skip-tls-verify"); err == nil {
-					opts = append(opts, checker.WithHTTPSkipTLSVerify(skipTLS))
-				}
+				skipTLS := tinyflags.GetOrDefaultDynamic[bool](group, id, "skip-tls-verify")
+				opts = append(opts, checker.WithHTTPSkipTLSVerify(skipTLS))
 
-				if timeout, err := group.GetDuration("timeout"); err == nil {
-					opts = append(opts, checker.WithHTTPTimeout(timeout))
-				}
+				timeout := tinyflags.GetOrDefaultDynamic[time.Duration](group, id, "timeout")
+				opts = append(opts, checker.WithHTTPTimeout(timeout))
 
 			case checker.TCP:
-				if timeout, err := group.GetDuration("timeout"); err == nil {
-					opts = append(opts, checker.WithHTTPTimeout(timeout)) // Could have a TCP-specific timeout option
-				}
+				timeout := tinyflags.GetOrDefaultDynamic[time.Duration](group, id, "timeout")
+				opts = append(opts, checker.WithHTTPTimeout(timeout))
 
 			case checker.ICMP:
-				if readTimeout, err := group.GetDuration("read-timeout"); err == nil {
-					opts = append(opts, checker.WithICMPReadTimeout(readTimeout))
-				}
-				if writeTimeout, err := group.GetDuration("write-timeout"); err == nil {
-					opts = append(opts, checker.WithICMPWriteTimeout(writeTimeout))
-				}
+				rt := tinyflags.GetOrDefaultDynamic[time.Duration](group, id, "read-timeout")
+				opts = append(opts, checker.WithICMPReadTimeout(rt))
+
+				wt := tinyflags.GetOrDefaultDynamic[time.Duration](group, id, "write-timeout")
+				opts = append(opts, checker.WithICMPWriteTimeout(wt))
 			}
 
-			name, _ := group.GetString("name")
-			if name == "" {
-				name = group.Name
+			name := id
+			if n := tinyflags.GetOrDefaultDynamic[string](group, id, "name"); n != "" {
+				name = n
 			}
 
-			instance, err := checker.NewChecker(checkType, name, resolvedAddress, opts...)
+			instance, err := checker.NewChecker(checkType, name, resolvedAddr, opts...)
 			if err != nil {
-				return nil, fmt.Errorf("failed to create %s checker: %w", parentName, err)
+				return nil, fmt.Errorf("failed to create %s checker: %w", checkType, err)
 			}
 
-			// Wrap the checker with its interval and add to the list
 			checkers = append(checkers, CheckerWithInterval{
 				Interval: interval,
 				Checker:  instance,

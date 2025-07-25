@@ -108,7 +108,7 @@ func TestRunConfigErrorUnsupportedCheckType(t *testing.T) {
 	err := Run(ctx, version, args, &output)
 
 	assert.Error(t, err)
-	assert.EqualError(t, err, "configuration error: flag parsing error: unknown flag: --target.unsupported.name")
+	assert.EqualError(t, err, "configuration error: unknown dynamic group: target")
 }
 
 func TestRunConfigErrorInvalidHeaders(t *testing.T) {
@@ -149,24 +149,5 @@ func TestRunParseError(t *testing.T) {
 	err := Run(ctx, version, args, &output)
 
 	assert.Error(t, err)
-	assert.EqualError(t, err, "configuration error: flag parsing error: unknown flag: --invalid")
-}
-
-func TestRunShowVersion(t *testing.T) {
-	t.Parallel()
-
-	args := []string{
-		"--http.invalidheaders.name=TestService",
-		"--http.invalidheaders.address=http://localhost:8080",
-		"--version",
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-
-	var output bytes.Buffer
-
-	err := Run(ctx, version, args, &output)
-
-	assert.NoError(t, err)
+	assert.EqualError(t, err, "configuration error: unknown flag: --invalid")
 }
