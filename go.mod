@@ -1,14 +1,13 @@
 module github.com/containeroo/never
 
-go 1.24.2
+go 1.24.4
 
 toolchain go1.24.5
 
 require (
-	github.com/containeroo/dynflags v0.1.1
 	github.com/containeroo/httputils v0.0.1
 	github.com/containeroo/resolver v0.1.0
-	github.com/spf13/pflag v1.0.7
+	github.com/containeroo/tinyflags v0.0.26
 	github.com/stretchr/testify v1.10.0
 	golang.org/x/net v0.42.0
 	golang.org/x/sync v0.16.0
