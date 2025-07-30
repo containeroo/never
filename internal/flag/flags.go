@@ -48,7 +48,7 @@ func ParseFlags(args []string, version string) (*ParsedFlags, error) {
 	http.String("name", "", "Name of the HTTP checker. Defaults to <ID>.")
 	http.String("method", "GET", "HTTP method to use")
 	http.String("address", "", "HTTP target URL").
-		Validate(func(s string) error {
+		Finalize(func(s string) error {
 			u, err := url.Parse(s)
 			if err != nil || u.Host == "" {
 				return fmt.Errorf("invalid URL: %q", s)
@@ -73,7 +73,7 @@ func ParseFlags(args []string, version string) (*ParsedFlags, error) {
 	icmp := tf.DynamicGroup("icmp").Title("ICMP")
 	icmp.String("name", "", "Name of the ICMP checker. Defaults to <ID>.")
 	icmp.String("address", "", "ICMP target address").
-		Validate(func(s string) error {
+		Finalize(func(s string) error {
 			if ip := net.ParseIP(s); ip != nil {
 				return nil
 			}
@@ -98,7 +98,7 @@ func ParseFlags(args []string, version string) (*ParsedFlags, error) {
 	tcp := tf.DynamicGroup("tcp").Title("TCP")
 	tcp.String("name", "", "Name of the TCP checker. Defaults to <ID>.")
 	tcp.String("address", "", "TCP target address").
-		Validate(func(s string) error {
+		Finalize(func(s string) error {
 			if _, _, err := net.SplitHostPort(s); err != nil {
 				return fmt.Errorf("TCP address must be host:port (e.g. 127.0.0.1:80): %w", err)
 			}
