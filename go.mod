@@ -7,7 +7,7 @@ toolchain go1.24.5
 require (
 	github.com/containeroo/httputils v0.0.1
 	github.com/containeroo/resolver v0.1.0
-	github.com/containeroo/tinyflags v0.0.33
+	github.com/containeroo/tinyflags v0.0.34
 	github.com/stretchr/testify v1.10.0
 	golang.org/x/net v0.42.0
 	golang.org/x/sync v0.16.0
