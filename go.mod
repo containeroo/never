@@ -2,7 +2,7 @@ module github.com/containeroo/never
 
 go 1.24.4
 
-toolchain go1.24.5
+toolchain go1.24.6
 
 require (
 	github.com/containeroo/httputils v0.0.1
