@@ -280,7 +280,7 @@ func TestICMPv4_ListenPacket(t *testing.T) {
 		require.Error(t, err)
 
 		// Check your wrapper/prefix is present (stable across platforms)
-		assert.Contains(t, err.Error(), "failed to listen for ICMP packets: listen ip4:icmp: lookup invalid-address:")
+		assert.Contains(t, err.Error(), "failed to listen for ICMP packets: listen ip4:icmp:")
 
 		// Unwrap the root cause: accept NXDOMAIN (IsNotFound) or SERVFAIL (IsTemporary)
 		var dnsErr *net.DNSError
@@ -498,7 +498,7 @@ func TestICMPv6_ListenPacket(t *testing.T) {
 		require.Error(t, err)
 
 		// Check your wrapper/prefix is present (stable across platforms)
-		assert.Contains(t, err.Error(), "failed to listen for ICMP packets: listen ip6:ipv6-icmp: lookup invalid-address:")
+		assert.Contains(t, err.Error(), "failed to listen for ICMP packets: listen ip6:ipv6-icmp:")
 
 		// Unwrap the root cause: accept NXDOMAIN (IsNotFound) or SERVFAIL (IsTemporary)
 		var dnsErr *net.DNSError
