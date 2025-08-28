@@ -1,0 +1,18 @@
+# syntax=docker/dockerfile:1.17
+
+# Minimal image built from the already-built binary that GoReleaser provides.
+FROM alpine:3.22 AS prep
+# We need to create /work and /tmp, but scratch can't RUN, so prep them first.
+RUN mkdir -p /outfs/work /outfs/tmp
+
+FROM gcr.io/distroless/static:nonroot
+# Copy binary + empty writable dirs
+COPY never /never
+COPY --from=prep /outfs/work /work
+COPY --from=prep /outfs/tmp  /tmp
+ENV HOME=/tmp
+WORKDIR /work
+COPY --from=builder /never /
+USER 65532:65532
+ENTRYPOINT ["/never"]
+

@@ -1,19 +1,31 @@
-FROM golang:1.25-alpine as builder
+# syntax=docker/dockerfile:1.17
+FROM golang:1.25-alpine AS builder
 
-ARG LDFLAGS="-s -w"
+ARG VERSION=dev
+ARG COMMIT=dirty
+ARG LDFLAGS="-s -w -X main.Version=${VERSION} -X main.Commit=${COMMIT}"
 ENV CGO_ENABLED=0
 
 WORKDIR /workspace
 COPY go.mod go.sum ./
-# cache deps before building and copying source so that we don't need to re-download as much
-# and so that source changes don't invalidate our downloaded layer
 RUN go mod download
 
 COPY . .
 
-RUN go build -ldflags="$LDFLAGS" -o /never ./cmd/never/main.go
+RUN go build -ldflags="${LDFLAGS}" -o /out/never ./cmd/never/main.go
 
+# Prepare world-writable dirs for arbitrary UID (OpenShift)
+RUN mkdir -p /outfs/work /outfs/tmp && chmod 0777 /outfs/work /outfs/tmp
+
+# Final: FROM scratch
 FROM gcr.io/distroless/static:nonroot
-COPY --from=builder /never /
+COPY --from=builder /out/never /never
+COPY --from=builder /outfs/work /work
+COPY --from=builder /outfs/tmp  /tmp
+ENV HOME=/tmp
+WORKDIR /work
 USER 65532:65532
 ENTRYPOINT ["/never"]
+
+
+

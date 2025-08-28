@@ -1,33 +1,30 @@
+---
 project_name: never
-version: 2
-
 before:
   hooks:
     - go mod tidy
-
 builds:
-  - id: never-build
+  - id: never
     main: ./cmd/never/main.go
-    env:
-      - CGO_ENABLED=0
-    goos:
-      - linux
-    goarch:
-      - amd64
-      - arm64
+    binary: never
+    env: [CGO_ENABLED=0]
+    goos: [linux, darwin]
+    goarch: [amd64, arm64]
     ldflags:
       - -s -w
       - -X main.Version={{ .Tag }}
-
+      - -X main.Commit={{ .FullCommit }}
 dockers:
-  - image_templates:
-      - ghcr.io/containeroo/never:{{ trimprefix .Tag "v" }}-amd64
-      - ghcr.io/containeroo/never:latest-amd64
+  - ids: [never] # tie this docker image to the 'never' build
     use: buildx
-    dockerfile: Dockerfile
+    dockerfile: Dockerfile.goreleaser
+    image_templates:
+      - ghcr.io/containeroo/never:{{ .Tag }}-amd64
     build_flag_templates:
       - --pull
       - --platform=linux/amd64
+      - --build-arg
+      - LDFLAGS=-s -w -X main.Version={{ .Tag }} -X main.Commit={{ .FullCommit }}
       - --label=org.opencontainers.image.title={{ .ProjectName }}
       - --label=org.opencontainers.image.description={{ .ProjectName }}
       - --label=org.opencontainers.image.url=https://github.com/containeroo/never
@@ -36,20 +33,17 @@ dockers:
       - --label=org.opencontainers.image.created={{ time "2006-01-02T15:04:05Z07:00" }}
       - --label=org.opencontainers.image.revision={{ .FullCommit }}
       - --label=org.opencontainers.image.licenses="GNU General Public License v3.0"
-    extra_files:
-      - go.mod
-      - go.sum
-      - cmd
-      - internal
-  - image_templates:
-      - ghcr.io/containeroo/never:{{ trimprefix .Tag "v" }}-arm64v8
-      - ghcr.io/containeroo/never:latest-arm64v8
+
+  - ids: [never]
     use: buildx
-    goarch: arm64
-    dockerfile: Dockerfile
+    dockerfile: Dockerfile.goreleaser
+    image_templates:
+      - ghcr.io/containeroo/never:{{ .Tag }}-arm64
     build_flag_templates:
       - --pull
-      - --platform=linux/arm64/v8
+      - --platform=linux/arm64
+      - --build-arg
+      - LDFLAGS=-s -w -X main.Version={{ .Tag }} -X main.Commit={{ .FullCommit }}
       - --label=org.opencontainers.image.title={{ .ProjectName }}
       - --label=org.opencontainers.image.description={{ .ProjectName }}
       - --label=org.opencontainers.image.url=https://github.com/containeroo/never
@@ -58,18 +52,20 @@ dockers:
       - --label=org.opencontainers.image.created={{ time "2006-01-02T15:04:05Z07:00" }}
       - --label=org.opencontainers.image.revision={{ .FullCommit }}
       - --label=org.opencontainers.image.licenses="GNU General Public License v3.0"
-    extra_files:
-      - go.mod
-      - go.sum
-      - cmd
-      - internal
 
 docker_manifests:
-  - name_template: ghcr.io/containeroo/never:{{ trimprefix .Tag "v" }}
+  - name_template: ghcr.io/containeroo/never:{{ .Tag }}
     image_templates:
-      - ghcr.io/containeroo/never:{{ trimprefix .Tag "v" }}-amd64
-      - ghcr.io/containeroo/never:{{ trimprefix .Tag "v" }}-arm64v8
+      - ghcr.io/containeroo/never:{{ .Tag }}-amd64
+      - ghcr.io/containeroo/never:{{ .Tag }}-arm64
   - name_template: ghcr.io/containeroo/never:latest
     image_templates:
-      - ghcr.io/containeroo/never:latest-amd64
-      - ghcr.io/containeroo/never:latest-arm64v8
+      - ghcr.io/containeroo/never:{{ .Tag }}-amd64
+      - ghcr.io/containeroo/never:{{ .Tag }}-arm64
+
+archives:
+  - formats: ["tar.gz"]
+
+checksum:
+  name_template: "{{ .ProjectName }}_{{ .Version }}_checksums.txt"
+  algorithm: sha256
