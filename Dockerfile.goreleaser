@@ -12,7 +12,6 @@ COPY --from=prep /outfs/work /work
 COPY --from=prep /outfs/tmp  /tmp
 ENV HOME=/tmp
 WORKDIR /work
-COPY --from=builder /never /
 USER 65532:65532
 ENTRYPOINT ["/never"]
 
