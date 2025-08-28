@@ -1,17 +1,17 @@
 ---
-name: Tests
+name: Unit Tests
 
 on:
   workflow_call:
   pull_request:
     branches:
-      - master
+      - main
     paths:
       - "cmd/**"
       - "internal/**"
       - "go.mod"
       - "go.sum"
-      - "Dockerfile"
+      - "Dockerfile.goreleaser"
   workflow_dispatch:
 
 jobs:
