@@ -1,17 +1,22 @@
 # syntax=docker/dockerfile:1.17
 
-# Minimal image built from the already-built binary that GoReleaser provides.
 FROM alpine:3.22 AS prep
-# We need to create /work and /tmp, but scratch can't RUN, so prep them first.
-RUN mkdir -p /outfs/work /outfs/tmp
+RUN mkdir -p /outfs/work /outfs/tmp \
+  # Change group ownership of /work and /tmp to GID 0 (root group),
+  # because OpenShift assigns containers a random UID but always includes them in group 0.
+  && chgrp -R 0 /outfs/work /outfs/tmp \
+  # Give group 0 read/write/execute (X only applies to dirs or already-executable files).
+  # This makes the dirs writable by arbitrary UIDs in group 0.
+  && chmod -R g+rwX /outfs/work /outfs/tmp \
+  # Set the setgid bit on the dirs so that any new files/dirs created inside
+  # will inherit group 0 instead of the creator's primary group.
+  && chmod g+s /outfs/work /outfs/tmp
 
 FROM gcr.io/distroless/static:nonroot
-# Copy binary + empty writable dirs
 COPY never /never
 COPY --from=prep /outfs/work /work
 COPY --from=prep /outfs/tmp  /tmp
 ENV HOME=/tmp
 WORKDIR /work
-USER 65532:65532
 ENTRYPOINT ["/never"]
 
