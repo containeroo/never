@@ -18,10 +18,9 @@ jobs:
   tests:
     name: Run Tests
     runs-on: ubuntu-latest
-
-    permissions:
-      contents: read
-
+    container:
+      image: golang:1.25
+      options: --cap-add=NET_RAW --cap-add=NET_ADMIN
     steps:
       - name: Check out code
         uses: actions/checkout@v5
@@ -29,17 +28,23 @@ jobs:
           fetch-depth: 0
           submodules: recursive
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
+      - name: Install build tools (optional)
+        run: |
+          apt-get update
+          apt-get install -y make
+
+      - name: Set up Go cache
+        uses: actions/cache@v4
         with:
-          go-version-file: "go.mod"
-          check-latest: true
-          cache: true
+          path: |
+            /go/pkg/mod
+            ~/.cache/go-build
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
 
-      - name: Install Dependencies
-        run: |
-          make download
+      - name: Download deps
+        run: make download
 
-      - name: Run Unit Tests
-        run: |
-          make test
+      - name: Run unit tests
+        run: make test
