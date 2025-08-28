@@ -28,7 +28,7 @@ jobs:
           fetch-depth: 0
           submodules: recursive
 
-      - name: Install build tools (optional)
+      - name: Install build tools
         run: |
           apt-get update
           apt-get install -y make

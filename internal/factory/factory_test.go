@@ -37,10 +37,10 @@ func TestBuildCheckers(t *testing.T) {
 			"--http.mygroup.timeout=33s",
 		}
 		err := tf.Parse(args)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		checkers, err := factory.BuildCheckers(tf.DynamicGroups(), 9*time.Second)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Len(t, checkers, 1)
 		assert.Equal(t, "http://example.com", checkers[0].Checker.Address())
 		assert.Equal(t, 5*time.Second, checkers[0].Interval)
@@ -55,7 +55,7 @@ func TestBuildCheckers(t *testing.T) {
 
 		args := []string{"--invalid.mygroup.address=invalid-address"}
 		err := tf.Parse(args)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		checkers, err := factory.BuildCheckers(tf.DynamicGroups(), 2*time.Second)
 		assert.Nil(t, checkers)
@@ -77,11 +77,11 @@ func TestBuildCheckers(t *testing.T) {
 			"--http.mygroup.header=InvalidHeaderFormat",
 		}
 		err := tf.Parse(args)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		checkers, err := factory.BuildCheckers(tf.DynamicGroups(), 2*time.Second)
 
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.EqualError(t, err, "invalid \"--http.mygroup.header\": invalid header format: \"InvalidHeaderFormat\"")
 		assert.Nil(t, checkers)
 		assert.ErrorContains(t, err, "invalid \"--http.mygroup.header\"")
@@ -107,10 +107,10 @@ func TestBuildCheckers(t *testing.T) {
 			"--http.myid.expected-status-codes=201-200",
 		}
 		err := tf.Parse(args)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		checkers, err := factory.BuildCheckers(tf.DynamicGroups(), 2*time.Second)
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.Len(t, checkers, 0)
 	})
 
@@ -136,7 +136,7 @@ func TestBuildCheckers(t *testing.T) {
 		require.NoError(t, err)
 
 		checkers, err := factory.BuildCheckers(tf.DynamicGroups(), 2*time.Second)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Len(t, checkers, 1)
 	})
 
@@ -154,10 +154,10 @@ func TestBuildCheckers(t *testing.T) {
 			"--tcp.mygroup.timeout=3s",
 		}
 		err := tf.Parse(args)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		checkers, err := factory.BuildCheckers(tf.DynamicGroups(), 2*time.Second)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Len(t, checkers, 1)
 		assert.Equal(t, "127.0.0.1:8080", checkers[0].Checker.Address())
 	})
@@ -178,10 +178,10 @@ func TestBuildCheckers(t *testing.T) {
 			"--icmp.mygroup.write-timeout=2s",
 		}
 		err := tf.Parse(args)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		checkers, err := factory.BuildCheckers(tf.DynamicGroups(), 2*time.Second)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Len(t, checkers, 1)
 		assert.Equal(t, "8.8.8.8", checkers[0].Checker.Address())
 	})
@@ -201,10 +201,10 @@ func TestBuildCheckers(t *testing.T) {
 		}
 
 		err := tf.Parse(args)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		checker, err := factory.BuildCheckers(tf.DynamicGroups(), 2*time.Second)
 		assert.Nil(t, checker)
-		assert.Error(t, err)
+		require.Error(t, err)
 	})
 }

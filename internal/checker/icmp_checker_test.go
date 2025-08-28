@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/containeroo/never/internal/testutils"
 
@@ -24,7 +25,7 @@ func TestNewICMPCheckerValidIPv4(t *testing.T) {
 	w := WithICMPWriteTimeout(2 * time.Second)
 	checker, err := newICMPChecker("ValidIPv4", "127.0.0.1", r, w)
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, checker.Name(), "ValidIPv4")
 	assert.Equal(t, checker.Address(), "127.0.0.1")
 }
@@ -34,7 +35,7 @@ func TestNewICMPCheckerInvalidAddress(t *testing.T) {
 	t.Parallel()
 
 	_, err := newICMPChecker("InvalidAddress", "invalid-address")
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, err.Error(), "failed to create ICMP protocol: invalid or unresolvable address: invalid-address")
 }
 
@@ -77,7 +78,7 @@ func TestICMPCheckerCheckSuccess(t *testing.T) {
 	defer cancel()
 
 	err := checker.Check(ctx)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 // TestICMPCheckerCheckResolveError tests ICMP checking with an address resolution failure.
@@ -101,8 +102,16 @@ func TestICMPCheckerCheckResolveError(t *testing.T) {
 	defer cancel()
 
 	err := checker.Check(ctx)
-	assert.Error(t, err)
-	assert.EqualError(t, err, "failed to resolve IP address 'invalid-host': lookup invalid-host: no such host")
+	require.Error(t, err)
+
+	// Use contains since the error message may vary on different platforms
+	assert.Contains(t, err.Error(), "failed to resolve IP address 'invalid-host':")
+
+	// Unwrap the underlying cause
+	var dnsErr *net.DNSError
+	if assert.ErrorAs(t, err, &dnsErr) {
+		assert.True(t, dnsErr.IsNotFound || dnsErr.IsTemporary, "expected NXDOMAIN or temporary DNS failure, got: %+v", dnsErr)
+	}
 }
 
 // TestICMPCheckerCheckWriteError tests ICMP checking with a failure to write to the connection.
@@ -136,7 +145,7 @@ func TestICMPCheckerCheckWriteError(t *testing.T) {
 	defer cancel()
 
 	err := checker.Check(ctx)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.EqualError(t, err, "failed to send ICMP request: mock write error")
 }
 
@@ -167,7 +176,7 @@ func TestICMPCheckerCheckListenPacketError(t *testing.T) {
 	defer cancel()
 
 	err := checker.Check(ctx)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.EqualError(t, err, "failed to listen for ICMP packets: mock listen packet error")
 }
 
@@ -201,7 +210,7 @@ func TestICMPCheckerCheckMakeRequestError(t *testing.T) {
 	defer cancel()
 
 	err := checker.Check(ctx)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.EqualError(t, err, "failed to create ICMP request: mock make request error")
 }
 
@@ -239,7 +248,7 @@ func TestICMPCheckerCheckWriteDeadlineError(t *testing.T) {
 	defer cancel()
 
 	err := checker.Check(ctx)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.EqualError(t, err, "failed to send ICMP request: mock write error")
 }
 
@@ -274,7 +283,7 @@ func TestICMPCheckerCheckReadError(t *testing.T) {
 	defer cancel()
 
 	err := checker.Check(ctx)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.EqualError(t, err, "failed to read ICMP reply: mock read error")
 }
 
@@ -311,7 +320,7 @@ func TestICMPCheckerSetWriteDeadlineError(t *testing.T) {
 	defer cancel()
 
 	err := checker.Check(ctx)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.EqualError(t, err, "failed to set write deadline: mock write deadline error")
 }
 
@@ -348,7 +357,7 @@ func TestICMPCheckerSetReadDeadlineError(t *testing.T) {
 	defer cancel()
 
 	err := checker.Check(ctx)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.EqualError(t, err, "failed to set read deadline: mock write deadline error")
 }
 
@@ -381,6 +390,6 @@ func TestICMPCheckerValidateReplyError(t *testing.T) {
 	defer cancel()
 
 	err := checker.Check(ctx)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.EqualError(t, err, "failed to validate ICMP reply: mock validation error")
 }

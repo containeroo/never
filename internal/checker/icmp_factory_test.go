@@ -2,10 +2,15 @@ package checker
 
 import (
 	"context"
+	"errors"
+	"net"
+	"strings"
+	"syscall"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/containeroo/never/internal/testutils"
 
@@ -14,6 +19,20 @@ import (
 	"golang.org/x/net/ipv6"
 )
 
+func isPermissionError(t *testing.T, err error) bool {
+	t.Helper()
+	if err == nil {
+		return false
+	}
+	// Best-effort cross-platform check
+	// net.OpError -> os.SyscallError -> EPERM/EACCES
+	if errors.Is(err, syscall.EPERM) || errors.Is(err, syscall.EACCES) {
+		return true
+	}
+	s := strings.ToLower(err.Error())
+	return strings.Contains(s, "operation not permitted") || strings.Contains(s, "permission denied")
+}
+
 func TestNewProtocol(t *testing.T) {
 	t.Parallel()
 
@@ -21,7 +40,7 @@ func TestNewProtocol(t *testing.T) {
 		t.Parallel()
 
 		protocol, err := newProtocol("192.168.1.1")
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		if _, ok := protocol.(*ICMPv4); !ok {
 			t.Fatalf("expected ICMPv4 protocol, got %T", protocol)
@@ -32,7 +51,7 @@ func TestNewProtocol(t *testing.T) {
 		t.Parallel()
 
 		protocol, err := newProtocol("2001:db8::1")
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		if _, ok := protocol.(*ICMPv6); !ok {
 			t.Fatalf("expected ICMPv6 protocol, got %T", protocol)
@@ -44,7 +63,7 @@ func TestNewProtocol(t *testing.T) {
 
 		_, err := newProtocol("invalid.domain")
 
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.EqualError(t, err, "invalid or unresolvable address: invalid.domain")
 	})
 
@@ -53,7 +72,7 @@ func TestNewProtocol(t *testing.T) {
 
 		_, err := newProtocol("300.300.300.300")
 
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.EqualError(t, err, "invalid or unresolvable address: 300.300.300.300")
 	})
 }
@@ -67,7 +86,7 @@ func TestICMPv4MakeRequest(t *testing.T) {
 		protocol := &ICMPv4{}
 		msg, err := protocol.MakeRequest(1234, 1)
 
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Len(t, msg, 23)
 	})
 }
@@ -93,7 +112,7 @@ func TestICMPv4_SetDeadline(t *testing.T) {
 		protocol := &ICMPv4{conn: &mockConn}
 		err := protocol.SetDeadline(time.Now().Add(1 * time.Second))
 
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	})
 
 	t.Run("SetDeadline Error", func(t *testing.T) {
@@ -102,7 +121,7 @@ func TestICMPv4_SetDeadline(t *testing.T) {
 		protocol := &ICMPv4{conn: nil}
 		err := protocol.SetDeadline(time.Now().Add(1 * time.Second))
 
-		assert.Error(t, err)
+		require.Error(t, err)
 	})
 }
 
@@ -120,7 +139,7 @@ func TestICMPv4_ValidateReply(t *testing.T) {
 
 		err := protocol.ValidateReply(request, 1234, 1)
 
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.EqualError(t, err, "unexpected ICMPv4 message type: echo")
 	})
 
@@ -135,7 +154,7 @@ func TestICMPv4_ValidateReply(t *testing.T) {
 		reply[0] = byte(ipv4.ICMPTypeEchoReply)
 
 		err := protocol.ValidateReply(reply, 1234, 1)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	})
 	t.Run("ValidateReply Identifier Mismatch", func(t *testing.T) {
 		t.Parallel()
@@ -149,7 +168,7 @@ func TestICMPv4_ValidateReply(t *testing.T) {
 
 		err := protocol.ValidateReply(reply, 1234, 1)
 
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.EqualError(t, err, "unexpected ICMPv4 message type: echo")
 	})
 
@@ -161,7 +180,7 @@ func TestICMPv4_ValidateReply(t *testing.T) {
 		reply := []byte{0xff, 0xff, 0xff}
 
 		err := protocol.ValidateReply(reply, 1234, 1)
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.EqualError(t, err, "failed to parse ICMPv4 message: message too short")
 	})
 
@@ -175,7 +194,7 @@ func TestICMPv4_ValidateReply(t *testing.T) {
 		request[4] = 0xFF
 
 		err := protocol.ValidateReply(request, 1234, 1)
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.EqualError(t, err, "unexpected ICMPv4 message type: echo")
 	})
 
@@ -188,7 +207,7 @@ func TestICMPv4_ValidateReply(t *testing.T) {
 		identifier := uint16(1234)
 		sequence := uint16(1)
 		validRequest, err := protocol.MakeRequest(identifier, sequence)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		// Modify the request to simulate an incorrect identifier or sequence in the reply
 		replyMsg := icmp.Message{
@@ -201,11 +220,11 @@ func TestICMPv4_ValidateReply(t *testing.T) {
 			},
 		}
 		reply, err := replyMsg.Marshal(nil)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		// Call ValidateReply with the modified reply
 		err = protocol.ValidateReply(reply, identifier, sequence)
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.EqualError(t, err, "identifier or sequence mismatch")
 	})
 }
@@ -222,12 +241,17 @@ func TestICMPv4_ListenPacket(t *testing.T) {
 		defer cancel()
 
 		conn, err := protocol.ListenPacket(ctx, "ip4:icmp", "localhost")
-
-		assert.NoError(t, err)
-		assert.NotNil(t, conn)
-
-		// Clean up the connection
+		if err != nil {
+			// If we don't have raw-socket privilege, skip instead of failing.
+			if isPermissionError(t, err) {
+				t.Skip("skipping: requires raw ICMP privileges (root or CAP_NET_RAW)")
+			}
+			// Some other error? That's a real failure.
+			require.NoError(t, err)
+		}
 		defer conn.Close() // nolint:errcheck
+
+		require.NotNil(t, conn)
 	})
 
 	t.Run("Invalid Network", func(t *testing.T) {
@@ -239,7 +263,7 @@ func TestICMPv4_ListenPacket(t *testing.T) {
 		defer cancel()
 
 		_, err := protocol.ListenPacket(ctx, "invalid-network", "localhost")
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.EqualError(t, err, "failed to listen for ICMP packets: listen invalid-network: unknown network invalid-network")
 	})
 
@@ -253,8 +277,17 @@ func TestICMPv4_ListenPacket(t *testing.T) {
 
 		_, err := protocol.ListenPacket(ctx, "ip4:icmp", "invalid-address")
 
-		assert.Error(t, err)
-		assert.EqualError(t, err, "failed to listen for ICMP packets: listen ip4:icmp: lookup invalid-address: no such host")
+		require.Error(t, err)
+
+		// Check your wrapper/prefix is present (stable across platforms)
+		assert.Contains(t, err.Error(), "failed to listen for ICMP packets: listen ip4:icmp: lookup invalid-address:")
+
+		// Unwrap the root cause: accept NXDOMAIN (IsNotFound) or SERVFAIL (IsTemporary)
+		var dnsErr *net.DNSError
+		if assert.ErrorAs(t, err, &dnsErr) {
+			assert.True(t, dnsErr.IsNotFound || dnsErr.IsTemporary,
+				"expected NXDOMAIN or temporary DNS failure, got: %+v", dnsErr)
+		}
 	})
 }
 
@@ -267,7 +300,7 @@ func TestICMPv6MakeRequest(t *testing.T) {
 		protocol := &ICMPv6{}
 		msg, err := protocol.MakeRequest(1234, 1)
 
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.NotNil(t, msg)
 		assert.Len(t, msg, 23)
 	})
@@ -294,7 +327,7 @@ func TestICMPv6_SetDeadline(t *testing.T) {
 		protocol := &ICMPv6{conn: &mockConn}
 		err := protocol.SetDeadline(time.Now().Add(1 * time.Second))
 
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	})
 
 	t.Run("SetDeadline Error", func(t *testing.T) {
@@ -303,7 +336,7 @@ func TestICMPv6_SetDeadline(t *testing.T) {
 		protocol := &ICMPv6{conn: nil}
 		err := protocol.SetDeadline(time.Now().Add(1 * time.Second))
 
-		assert.Error(t, err)
+		require.Error(t, err)
 	})
 }
 
@@ -321,7 +354,7 @@ func TestICMPv6_ValidateReply(t *testing.T) {
 
 		err := protocol.ValidateReply(request, 1234, 1)
 
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.EqualError(t, err, "unexpected ICMPv6 message type: echo request")
 	})
 
@@ -336,7 +369,7 @@ func TestICMPv6_ValidateReply(t *testing.T) {
 		reply[0] = byte(ipv6.ICMPTypeEchoReply)
 
 		err := protocol.ValidateReply(reply, 1234, 1)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	})
 	t.Run("ValidateReply Identifier Mismatch", func(t *testing.T) {
 		t.Parallel()
@@ -350,7 +383,7 @@ func TestICMPv6_ValidateReply(t *testing.T) {
 
 		err := protocol.ValidateReply(reply, 1234, 1)
 
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.EqualError(t, err, "unexpected ICMPv6 message type: echo request")
 	})
 
@@ -362,7 +395,7 @@ func TestICMPv6_ValidateReply(t *testing.T) {
 		reply := []byte{0xff, 0xff, 0xff}
 
 		err := protocol.ValidateReply(reply, 1234, 1)
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.EqualError(t, err, "failed to parse ICMPv6 message: message too short")
 	})
 
@@ -377,7 +410,7 @@ func TestICMPv6_ValidateReply(t *testing.T) {
 
 		err := protocol.ValidateReply(request, 1234, 1)
 
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.EqualError(t, err, "unexpected ICMPv6 message type: echo request")
 	})
 
@@ -391,7 +424,7 @@ func TestICMPv6_ValidateReply(t *testing.T) {
 		sequence := uint16(1)
 		validRequest, err := protocol.MakeRequest(identifier, sequence)
 
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		// Modify the request to simulate an incorrect identifier or sequence in the reply
 		replyMsg := icmp.Message{
@@ -404,11 +437,11 @@ func TestICMPv6_ValidateReply(t *testing.T) {
 			},
 		}
 		reply, err := replyMsg.Marshal(nil)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		// Call ValidateReply with the modified reply
 		err = protocol.ValidateReply(reply, identifier, sequence)
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.EqualError(t, err, "identifier or sequence mismatch")
 	})
 }
@@ -425,12 +458,17 @@ func TestICMPv6_ListenPacket(t *testing.T) {
 		defer cancel()
 
 		conn, err := protocol.ListenPacket(ctx, "ip6:ipv6-icmp", "localhost")
-
-		assert.NoError(t, err)
-		assert.NotNil(t, conn)
-
-		// Clean up the connection
+		if err != nil {
+			// If we don't have raw-socket privilege, skip instead of failing.
+			if isPermissionError(t, err) {
+				t.Skip("skipping: requires raw ICMP privileges (root or CAP_NET_RAW)")
+			}
+			// Some other error? That's a real failure.
+			require.NoError(t, err)
+		}
 		defer conn.Close() // nolint:errcheck
+
+		require.NotNil(t, conn)
 	})
 
 	t.Run("Invalid Network", func(t *testing.T) {
@@ -443,7 +481,7 @@ func TestICMPv6_ListenPacket(t *testing.T) {
 
 		_, err := protocol.ListenPacket(ctx, "invalid-network", "localhost")
 
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.EqualError(t, err, "failed to listen for ICMP packets: listen invalid-network: unknown network invalid-network")
 	})
 
@@ -457,7 +495,16 @@ func TestICMPv6_ListenPacket(t *testing.T) {
 
 		_, err := protocol.ListenPacket(ctx, "ip6:ipv6-icmp", "invalid-address")
 
-		assert.Error(t, err)
-		assert.EqualError(t, err, "failed to listen for ICMP packets: listen ip6:ipv6-icmp: lookup invalid-address: no such host")
+		require.Error(t, err)
+
+		// Check your wrapper/prefix is present (stable across platforms)
+		assert.Contains(t, err.Error(), "failed to listen for ICMP packets: listen ip6:ipv6-icmp: lookup invalid-address:")
+
+		// Unwrap the root cause: accept NXDOMAIN (IsNotFound) or SERVFAIL (IsTemporary)
+		var dnsErr *net.DNSError
+		if assert.ErrorAs(t, err, &dnsErr) {
+			assert.True(t, dnsErr.IsNotFound || dnsErr.IsTemporary,
+				"expected NXDOMAIN or temporary DNS failure, got: %+v", dnsErr)
+		}
 	})
 }

@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewChecker(t *testing.T) {
@@ -14,7 +15,7 @@ func TestNewChecker(t *testing.T) {
 
 		check, err := NewChecker(HTTP, "example", "http://example.com")
 
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, check.Name(), "example")
 		assert.Equal(t, check.Type(), "HTTP")
 	})
@@ -24,7 +25,7 @@ func TestNewChecker(t *testing.T) {
 
 		check, err := NewChecker(TCP, "example", "example.com:80")
 
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, check.Name(), "example")
 		assert.Equal(t, check.Type(), "TCP")
 	})
@@ -34,7 +35,7 @@ func TestNewChecker(t *testing.T) {
 
 		check, err := NewChecker(ICMP, "example", "example.com")
 
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, check.Name(), "example")
 		assert.Equal(t, check.Type(), "ICMP")
 	})
@@ -44,7 +45,7 @@ func TestNewChecker(t *testing.T) {
 
 		_, err := NewChecker("", "example", "example.com")
 
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.EqualError(t, err, "unsupported check type: ")
 	})
 }
@@ -57,7 +58,7 @@ func TestParseCheckType(t *testing.T) {
 
 		result, err := ParseCheckType("HTTP")
 
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, result, HTTP)
 	})
 
@@ -66,7 +67,7 @@ func TestParseCheckType(t *testing.T) {
 
 		result, err := ParseCheckType("http")
 
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, result, HTTP)
 	})
 
@@ -75,7 +76,7 @@ func TestParseCheckType(t *testing.T) {
 
 		result, err := ParseCheckType("tcp")
 
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, result, TCP)
 	})
 
@@ -84,7 +85,7 @@ func TestParseCheckType(t *testing.T) {
 
 		result, err := ParseCheckType("tcp")
 
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, result, TCP)
 	})
 
@@ -93,7 +94,7 @@ func TestParseCheckType(t *testing.T) {
 
 		result, err := ParseCheckType("ICMP")
 
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, result, ICMP)
 	})
 
@@ -102,7 +103,7 @@ func TestParseCheckType(t *testing.T) {
 
 		result, err := ParseCheckType("icmp")
 
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, result, ICMP)
 	})
 
@@ -111,7 +112,7 @@ func TestParseCheckType(t *testing.T) {
 
 		_, err := ParseCheckType("invalid")
 
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.EqualError(t, err, "unsupported check type: invalid")
 	})
 }

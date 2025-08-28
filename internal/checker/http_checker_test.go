@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestHTTPChecker(t *testing.T) {
@@ -24,13 +25,13 @@ func TestHTTPChecker(t *testing.T) {
 		defer server.Close()
 
 		checker, err := newHTTPChecker("example", server.URL)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 		defer cancel()
 
 		err = checker.Check(ctx)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, checker.Address(), server.URL)
 	})
 
@@ -48,13 +49,13 @@ func TestHTTPChecker(t *testing.T) {
 		defer server.Close()
 
 		checker, err := newHTTPChecker("example", server.URL, WithHTTPHeaders(map[string]string{"Authorization": "Bearer token"}))
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 		defer cancel()
 
 		err = checker.Check(ctx)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	})
 
 	t.Run("HTTP check with unexpected status code", func(t *testing.T) {
@@ -67,13 +68,13 @@ func TestHTTPChecker(t *testing.T) {
 		defer server.Close()
 
 		checker, err := newHTTPChecker("example", server.URL)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 		defer cancel()
 
 		err = checker.Check(ctx)
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.EqualError(t, err, "unexpected status code: got 404, expected one of [200]")
 	})
 
@@ -86,7 +87,7 @@ func TestHTTPChecker(t *testing.T) {
 		}
 
 		err = checker.Check(context.Background()) // Run the check to trigger the error.
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.EqualError(t, err, "failed to create request: parse \"://invalid-url\": missing protocol scheme")
 	})
 
@@ -101,14 +102,14 @@ func TestHTTPChecker(t *testing.T) {
 		defer server.Close()
 
 		checker, err := newHTTPChecker("example", server.URL, WithHTTPTimeout(1*time.Second))
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 		defer cancel()
 
 		err = checker.Check(ctx)
 
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.EqualError(t, err, fmt.Sprintf("HTTP request failed: Get \"http://%s\": context deadline exceeded", server.Listener.Addr().String()))
 	})
 
@@ -122,13 +123,13 @@ func TestHTTPChecker(t *testing.T) {
 		defer server.Close()
 
 		checker, err := newHTTPChecker("example", server.URL, WithExpectedStatusCodes([]int{202}))
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 		defer cancel()
 
 		err = checker.Check(ctx)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	})
 
 	t.Run("Custom HTTP method", func(t *testing.T) {
@@ -145,13 +146,13 @@ func TestHTTPChecker(t *testing.T) {
 		defer server.Close()
 
 		checker, err := newHTTPChecker("example", server.URL, WithHTTPMethod(http.MethodPost))
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 		defer cancel()
 
 		err = checker.Check(ctx)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	})
 
 	t.Run("Skip TLS verification", func(t *testing.T) {
@@ -164,12 +165,12 @@ func TestHTTPChecker(t *testing.T) {
 		defer server.Close()
 
 		checker, err := newHTTPChecker("example", server.URL, WithHTTPSkipTLSVerify(true))
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 		defer cancel()
 
 		err = checker.Check(ctx)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	})
 }

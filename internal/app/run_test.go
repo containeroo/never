@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // fake version for testing
@@ -86,7 +87,7 @@ func TestRunConfigErrorMissingTarget(t *testing.T) {
 
 	err := Run(ctx, version, args, &output)
 
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.EqualError(t, err, "configuration error: no checkers configured")
 }
 
@@ -107,7 +108,7 @@ func TestRunConfigErrorUnsupportedCheckType(t *testing.T) {
 
 	err := Run(ctx, version, args, &output)
 
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.EqualError(t, err, "configuration error: unknown dynamic group: target")
 }
 
@@ -129,7 +130,7 @@ func TestRunConfigErrorInvalidHeaders(t *testing.T) {
 
 	err := Run(ctx, version, args, &output)
 
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.EqualError(t, err, "failed to initialize target checkers: invalid \"--http.invalidheaders.header\": invalid header format: \"InvalidHeader\"")
 }
 
@@ -148,6 +149,6 @@ func TestRunParseError(t *testing.T) {
 
 	err := Run(ctx, version, args, &output)
 
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.EqualError(t, err, "configuration error: unknown flag: --invalid")
 }
