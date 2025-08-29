@@ -9,9 +9,9 @@ on:
     paths:
       - "cmd/**"
       - "internal/**"
-      - "go.mod"
-      - "go.sum"
-      - "Dockerfile.goreleaser"
+      - go.mod
+      - go.sum
+      - Dockerfile.goreleaser
   workflow_dispatch:
 
 jobs:
