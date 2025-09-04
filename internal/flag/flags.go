@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"net"
 	"net/url"
+	"strings"
 	"time"
 
+	"github.com/containeroo/httputils"
 	"github.com/containeroo/tinyflags"
 )
 
@@ -59,14 +61,35 @@ func ParseFlags(args []string, version string) (*ParsedFlags, error) {
 			return nil
 		}).
 		Required()
-	http.Duration("interval", 1*time.Second, "Time between HTTP requests. Can be overwritten with --default-interval.").
+	http.Duration("interval", 1*time.Second, "Time between HTTP requests. Can be globally overridden with --default-interval.").
+		Validate(func(d time.Duration) error {
+			if d <= 0 {
+				return errors.New("interval must be positive")
+			}
+			return nil
+		}).
 		Placeholder("DURATION")
-	http.StringSlice("header", []string{}, "HTTP headers to send")
+	http.StringSlice("header", []string{}, "HTTP headers to send").Placeholder("BLUB")
 	http.Bool("allow-duplicate-headers", defaultHTTPAllowDuplicateHeaders, "Allow duplicate HTTP headers")
-	http.String("expected-status-codes", "200", "Expected HTTP status codes").
-		Placeholder("CODE")
+	http.StringSlice("expected-status-codes", []string{"200"}, "Expected HTTP status codes. Comma-separated list of status codes, ranges possible (eg \"200-299\", \"300,301\")").
+		Validate(func(codes string) error {
+			for _, code := range strings.Split(codes, ",") {
+				_, err := httputils.ParseStatusCodes(code)
+				if err != nil {
+					return fmt.Errorf("invalid status code: %w", err)
+				}
+			}
+			return nil
+		}).
+		Placeholder("CODES...")
 	http.Bool("skip-tls-verify", defaultHTTPSkipTLSVerify, "Skip TLS verification")
-	http.Duration("timeout", 2*time.Second, "Timeout in seconds").
+	http.Duration("timeout", 2*time.Second, "Request timeout").
+		Validate(func(d time.Duration) error {
+			if d <= 0 {
+				return errors.New("timeout must be positive")
+			}
+			return nil
+		}).
 		Placeholder("DURATION")
 
 	// ICMP flags
@@ -87,11 +110,29 @@ func ParseFlags(args []string, version string) (*ParsedFlags, error) {
 			return nil
 		}).
 		Required()
-	icmp.Duration("interval", 1*time.Second, "Time between ICMP requests. Can be overwritten with --default-interval.").
+	icmp.Duration("interval", 1*time.Second, "Time between ICMP requests. Can be globally overridden with --default-interval.").
+		Validate(func(d time.Duration) error {
+			if d <= 0 {
+				return errors.New("interval must be positive")
+			}
+			return nil
+		}).
 		Placeholder("DURATION")
 	icmp.Duration("read-timeout", 2*time.Second, "Timeout for ICMP read").
+		Validate(func(d time.Duration) error {
+			if d <= 0 {
+				return errors.New("read-timeout must be positive")
+			}
+			return nil
+		}).
 		Placeholder("DURATION")
 	icmp.Duration("write-timeout", 2*time.Second, "Timeout for ICMP write").
+		Validate(func(d time.Duration) error {
+			if d <= 0 {
+				return errors.New("write-timeout must be positive")
+			}
+			return nil
+		}).
 		Placeholder("DURATION")
 
 	// TCP flags
@@ -106,8 +147,20 @@ func ParseFlags(args []string, version string) (*ParsedFlags, error) {
 		}).
 		Required()
 	tcp.Duration("timeout", 2*time.Second, "Timeout for TCP connection").
+		Validate(func(d time.Duration) error {
+			if d <= 0 {
+				return errors.New("timeout must be positive")
+			}
+			return nil
+		}).
 		Placeholder("DURATION")
-	tcp.Duration("interval", 1*time.Second, "Time between TCP requests. Can be overwritten with --default-interval.").
+	tcp.Duration("interval", 1*time.Second, "Time between TCP requests. Can be globally overridden with --default-interval.").
+		Validate(func(d time.Duration) error {
+			if d <= 0 {
+				return errors.New("interval must be positive")
+			}
+			return nil
+		}).
 		Placeholder("DURATION")
 
 	// Parse unknown arguments with dynamic flags

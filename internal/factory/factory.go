@@ -54,8 +54,10 @@ func BuildCheckers(dynamicGroups []*tinyflags.DynamicGroup, defaultInterval time
 				}
 				opts = append(opts, checker.WithHTTPHeaders(headersMap))
 
-				codeStr := tinyflags.GetOrDefaultDynamic[string](group, id, "expected-status-codes")
-				codes, err := httputils.ParseStatusCodes(codeStr)
+				// Status codes can be passed multiple times and containt ranges.
+				// Get all status codes as a slices. Can produce something like []string{"200-299", "300", "301"}
+				codeStr := tinyflags.GetOrDefaultDynamic[[]string](group, id, "expected-status-codes")
+				codes, err := httputils.ParseStatusCodes(strings.Join(codeStr, ",")) // Join the slice again so ParseStatusCodes can parse it.
 				if err != nil {
 					return nil, fmt.Errorf("invalid --%s.%s.expected-status-codes: %w", group.Name(), id, err)
 				}
