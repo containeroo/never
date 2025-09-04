@@ -39,7 +39,7 @@ func TestRunHTTPReady(t *testing.T) {
 	defer cancel()
 
 	err := Run(ctx, version, args, &output)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	outputEntries := strings.Split(strings.TrimSpace(output.String()), "\n")
 	last := len(outputEntries) - 1
@@ -58,7 +58,7 @@ func TestRunTCPReady(t *testing.T) {
 	}
 
 	listener, err := net.Listen("tcp", "localhost:8082")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	defer listener.Close() // nolint:errcheck
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
@@ -67,7 +67,7 @@ func TestRunTCPReady(t *testing.T) {
 	var output strings.Builder
 
 	err = Run(ctx, version, args, &output)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	outputEntries := strings.Split(strings.TrimSpace(output.String()), "\n")
 	last := len(outputEntries) - 1
@@ -88,7 +88,7 @@ func TestRunConfigErrorMissingTarget(t *testing.T) {
 	err := Run(ctx, version, args, &output)
 
 	require.Error(t, err)
-	assert.EqualError(t, err, "configuration error: no checkers configured")
+	assert.EqualError(t, err, "no checkers to run")
 }
 
 func TestRunConfigErrorUnsupportedCheckType(t *testing.T) {

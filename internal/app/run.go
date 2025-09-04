@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -12,9 +11,8 @@ import (
 	"github.com/containeroo/never/internal/factory"
 	"github.com/containeroo/never/internal/flag"
 	"github.com/containeroo/never/internal/logging"
-	"github.com/containeroo/never/internal/wait"
+	"github.com/containeroo/never/internal/runner"
 	"github.com/containeroo/tinyflags"
-	"golang.org/x/sync/errgroup"
 )
 
 // Run is the main function of the application.
@@ -28,9 +26,8 @@ func Run(ctx context.Context, version string, args []string, output io.Writer) e
 	if err != nil {
 		if tinyflags.IsHelpRequested(err) || tinyflags.IsVersionRequested(err) {
 			fmt.Fprint(output, err.Error()) // nolint:errcheck
-			os.Exit(0)
+			return nil
 		}
-
 		return fmt.Errorf("configuration error: %w", err)
 	}
 
@@ -40,29 +37,9 @@ func Run(ctx context.Context, version string, args []string, output io.Writer) e
 		return fmt.Errorf("failed to initialize target checkers: %w", err)
 	}
 
-	if len(checkers) == 0 {
-		return errors.New("configuration error: no checkers configured")
-	}
-
+	// Setup logger
 	logger := logging.SetupLogger(version, output)
 
-	// Run checkers concurrently
-	eg, ctx := errgroup.WithContext(ctx)
-	for _, chk := range checkers {
-		checker := chk // Capture loop variable
-		eg.Go(func() error {
-			err := wait.WaitUntilReady(ctx, checker.Interval, checker.Checker, logger)
-			if err != nil {
-				return fmt.Errorf("checker '%s' failed: %w", checker.Checker.Name(), err)
-			}
-			return nil
-		})
-	}
-
-	// Wait for all checkers to finish or return error
-	if err := eg.Wait(); err != nil {
-		return err
-	}
-
-	return nil
+	// Run all checkers
+	return runner.RunAll(ctx, checkers, logger)
 }
