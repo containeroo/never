@@ -35,7 +35,7 @@ func ParseFlags(args []string, version string) (*ParsedFlags, error) {
 
 	interval := tf.Duration(
 		paramDefaultInterval,
-		15*time.Second,
+		defaultCheckInterval,
 		"Default interval between checks. Can be overridden for each target.",
 	).
 		Placeholder("DURATION").
