@@ -24,7 +24,7 @@ func TestBuildCheckers(t *testing.T) {
 		http.Duration("interval", 1*time.Second, "Time between HTTP requests. Can be overwritten with --default-interval.")
 		http.StringSlice("header", nil, "HTTP headers to send")
 		http.Bool("allow-duplicate-headers", true, "Allow duplicate HTTP headers")
-		http.String("expected-status-codes", "200", "Expected HTTP status codes")
+		http.StringSlice("expected-status-codes", []string{"200"}, "Expected HTTP status codes")
 		http.Bool("skip-tls-verify", true, "Skip TLS verification")
 		http.Duration("timeout", 22*time.Second, "Timeout in seconds")
 
