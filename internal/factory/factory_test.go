@@ -121,7 +121,7 @@ func TestBuildCheckers(t *testing.T) {
 		httpGroup := tf.DynamicGroup("http")
 		httpGroup.String("name", "", "Name of the HTTP checker. Defaults to <ID>.")
 		httpGroup.String("address", "http://example.com", "HTTP target address")
-		httpGroup.String("expected-status-codes", "200,201", "HTTP expected status codes")
+		httpGroup.StringSlice("expected-status-codes", []string{"200,201"}, "HTTP expected status codes")
 		httpGroup.StringSlice("header", []string{}, "HTTP headers")
 		httpGroup.String("method", "GET", "HTTP method to use")
 		httpGroup.Bool("allow-duplicate-headers", true, "Allow duplicate HTTP headers")
