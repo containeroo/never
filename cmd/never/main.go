@@ -8,7 +8,10 @@ import (
 	"github.com/containeroo/never/internal/app"
 )
 
-const Version string = "dev"
+var (
+	Version string = "dev"
+	Commit  string = "none"
+)
 
 func main() {
 	// Create a root context
