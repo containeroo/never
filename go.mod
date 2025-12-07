@@ -5,7 +5,7 @@ go 1.25.0
 require (
 	github.com/containeroo/httputils v0.0.1
 	github.com/containeroo/resolver v0.3.1
-	github.com/containeroo/tinyflags v0.0.56
+	github.com/containeroo/tinyflags v0.0.57
 	github.com/stretchr/testify v1.11.1
 	golang.org/x/net v0.47.0
 	golang.org/x/sync v0.18.0
