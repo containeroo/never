@@ -136,7 +136,7 @@ func ParseFlags(args []string, version string) (*ParsedFlags, error) {
 			if strings.Contains(s, "/") || strings.Contains(s, ":") {
 				return errors.New("ICMP address must be a hostname or IP without path or port")
 			}
-			if !net.IsDomainName(s) {
+			if !utils.IsHostnameLike(s) {
 				return fmt.Errorf("invalid hostname: %q", s)
 			}
 			return nil
