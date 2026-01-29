@@ -109,7 +109,7 @@ func TestRunConfigErrorUnsupportedCheckType(t *testing.T) {
 	err := Run(ctx, version, args, &output)
 
 	require.Error(t, err)
-	assert.EqualError(t, err, "configuration error: unknown dynamic group: target")
+	assert.EqualError(t, err, "unknown dynamic group \"target\" in flag --target.unsupported.name=TestService\nunknown dynamic group \"target\" in flag --target.unsupported.address=localhost:8080\nunknown dynamic group \"target\" in flag --target.unsupported.interval=1s\nunknown dynamic group \"target\" in flag --target.unsupported.timeout=1s")
 }
 
 func TestRunConfigErrorInvalidHeaders(t *testing.T) {
@@ -131,7 +131,7 @@ func TestRunConfigErrorInvalidHeaders(t *testing.T) {
 	err := Run(ctx, version, args, &output)
 
 	require.Error(t, err)
-	assert.EqualError(t, err, "failed to initialize target checkers: invalid \"--http.invalidheaders.header\": invalid header format: \"InvalidHeader\"")
+	assert.EqualError(t, err, "invalid \"--http.invalidheaders.header\": invalid header format: \"InvalidHeader\"")
 }
 
 func TestRunParseError(t *testing.T) {
@@ -150,5 +150,5 @@ func TestRunParseError(t *testing.T) {
 	err := Run(ctx, version, args, &output)
 
 	require.Error(t, err)
-	assert.EqualError(t, err, "configuration error: unknown flag: --invalid")
+	assert.EqualError(t, err, "unknown flag: --invalid")
 }

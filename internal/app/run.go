@@ -23,23 +23,30 @@ func Run(ctx context.Context, version string, args []string, output io.Writer) e
 
 	// Parse command-line flags
 	flags, err := flag.ParseFlags(args, version)
+	// Setup logger immediately so startup errors are correctly logged.
+	logger := logging.SetupLogger(version, output)
+
 	if err != nil {
 		if tinyflags.IsHelpRequested(err) || tinyflags.IsVersionRequested(err) {
-			fmt.Fprint(output, err.Error()) // nolint:errcheck
+			_, _ = fmt.Fprint(output, err.Error())
 			return nil
 		}
-		return fmt.Errorf("configuration error: %w", err)
+		logger.Error("failed to parse command-line flags", "err", err)
+		return err
 	}
 
 	// Initialize target checkers
 	checkers, err := factory.BuildCheckers(flags.DynamicGroups, flags.DefaultCheckInterval)
 	if err != nil {
-		return fmt.Errorf("failed to initialize target checkers: %w", err)
+		logger.Error("failed to initialize target checkers", "err", err)
+		return err
 	}
 
-	// Setup logger
-	logger := logging.SetupLogger(version, output)
-
 	// Run all checkers
-	return runner.RunAll(ctx, checkers, logger)
+	if err = runner.RunAll(ctx, checkers, logger); err != nil {
+		logger.Error("failed to run all checkers", "err", err)
+		return err
+	}
+
+	return nil
 }
