@@ -14,6 +14,8 @@ const (
 	defaultICMPWriteTimeout time.Duration = 1 * time.Second
 )
 
+var icmpSeq uint32
+
 // ICMPChecker implements the Checker interface for ICMP checks.
 type ICMPChecker struct {
 	name         string
@@ -39,8 +41,8 @@ func (c *ICMPChecker) Check(ctx context.Context) error {
 	}
 	defer conn.Close() // nolint:errcheck
 
-	id := uint16(os.Getpid() & 0xffff)                       // Create a unique identifier
-	seq := uint16(atomic.AddUint32(new(uint32), 1) & 0xffff) // Create a unique sequence number
+	id := uint16(os.Getpid() & 0xffff)                    // Process-scoped identifier
+	seq := uint16(atomic.AddUint32(&icmpSeq, 1) & 0xffff) // Monotonic sequence number
 
 	msg, err := c.protocol.MakeRequest(id, seq)
 	if err != nil {

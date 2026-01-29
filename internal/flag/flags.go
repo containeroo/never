@@ -111,15 +111,22 @@ func ParseFlags(args []string, version string) (*ParsedFlags, error) {
 
 	icmp.String("address", "", "ICMP target address").
 		Validate(func(s string) error {
+			s = strings.TrimSpace(s)
+			if s == "" {
+				return errors.New("ICMP address cannot be empty")
+			}
 			if ip := net.ParseIP(s); ip != nil {
 				return nil
 			}
 			u, err := url.Parse(s)
-			if err != nil || u.Host == "" {
-				return fmt.Errorf("invalid URL: %q", s)
+			if err != nil {
+				return fmt.Errorf("invalid address: %q", s)
 			}
 			if u.Scheme != "" {
 				return errors.New("ICMP check cannot have a scheme")
+			}
+			if u.Host == "" && u.Path == "" {
+				return fmt.Errorf("invalid address: %q", s)
 			}
 			return nil
 		}).
