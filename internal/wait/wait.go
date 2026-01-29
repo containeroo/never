@@ -20,6 +20,9 @@ func WaitUntilReady(ctx context.Context, interval time.Duration, checker checker
 
 	logger.Info(fmt.Sprintf("Waiting for %s to become ready...", checker.Name()))
 
+	timer := newStoppedTimer(interval)
+	defer timer.Stop()
+
 	for {
 		err := checker.Check(ctx)
 		if err == nil {
@@ -29,8 +32,10 @@ func WaitUntilReady(ctx context.Context, interval time.Duration, checker checker
 
 		logger.Warn(fmt.Sprintf("%s is not ready ✗", checker.Name()), slog.String("error", err.Error()))
 
+		timer.Reset(interval) // Reset starts the timer again
 		select {
-		case <-time.After(interval):
+		case <-timer.C:
+			// Wait until the timer expires
 			// Continue to the next connection attempt after the interval
 		case <-ctx.Done():
 			if ctx.Err() == context.Canceled {
@@ -39,4 +44,13 @@ func WaitUntilReady(ctx context.Context, interval time.Duration, checker checker
 			return ctx.Err()
 		}
 	}
+}
+
+// newStoppedTimer returns a new timer that is stopped and reset.
+func newStoppedTimer(d time.Duration) *time.Timer {
+	timer := time.NewTimer(d)
+	if !timer.Stop() {
+		<-timer.C
+	}
+	return timer
 }

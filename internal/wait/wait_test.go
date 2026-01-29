@@ -211,3 +211,23 @@ func TestWaitUntilReady_TCPContextCanceled(t *testing.T) {
 		t.Errorf("Expected log to contain %q, got %q", expectedLog, output.String())
 	}
 }
+
+func TestNewStoppedTimer(t *testing.T) {
+	t.Parallel()
+
+	timer := newStoppedTimer(10 * time.Millisecond)
+	defer timer.Stop()
+
+	select {
+	case <-timer.C:
+		t.Fatal("expected timer to be stopped")
+	default:
+	}
+
+	timer.Reset(5 * time.Millisecond)
+	select {
+	case <-timer.C:
+	case <-time.After(50 * time.Millisecond):
+		t.Fatal("expected timer to fire after reset")
+	}
+}

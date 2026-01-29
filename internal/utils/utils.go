@@ -27,15 +27,14 @@ func IsHostnameLike(s string) bool {
 		return false
 	}
 	for label := range strings.SplitSeq(s, ".") {
-		// Labels must be 1..63 chars.
+		// Labels are 1..63 chars.
 		if len(label) == 0 || len(label) > 63 {
 			return false
 		}
 		for i := range len(label) {
 			ch := label[i]
-			// Allow only ASCII letters/digits and hyphen; hyphen can't be first/last.
 			if ch == '-' {
-				// Allow hyphen only at start/end.
+				// No leading/trailing hyphen allowed
 				if i == 0 || i == len(label)-1 {
 					return false
 				}
