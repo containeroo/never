@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/containeroo/httputils"
+	"github.com/containeroo/never/internal/utils"
 	"github.com/containeroo/tinyflags"
 )
 
@@ -54,6 +55,10 @@ func ParseFlags(args []string, version string) (*ParsedFlags, error) {
 
 	http.String("address", "", "HTTP target URL").
 		Validate(func(s string) error {
+			s = strings.TrimSpace(s)
+			if utils.IsResolvableValue(s) {
+				return nil
+			}
 			u, err := url.Parse(s)
 			if err != nil || u.Host == "" {
 				return fmt.Errorf("invalid URL: %q", s)
@@ -115,6 +120,9 @@ func ParseFlags(args []string, version string) (*ParsedFlags, error) {
 			if s == "" {
 				return errors.New("ICMP address cannot be empty")
 			}
+			if utils.IsResolvableValue(s) {
+				return nil
+			}
 			if ip := net.ParseIP(s); ip != nil {
 				return nil
 			}
@@ -125,8 +133,11 @@ func ParseFlags(args []string, version string) (*ParsedFlags, error) {
 			if u.Scheme != "" {
 				return errors.New("ICMP check cannot have a scheme")
 			}
-			if u.Host == "" && u.Path == "" {
-				return fmt.Errorf("invalid address: %q", s)
+			if strings.Contains(s, "/") || strings.Contains(s, ":") {
+				return errors.New("ICMP address must be a hostname or IP without path or port")
+			}
+			if !net.IsDomainName(s) {
+				return fmt.Errorf("invalid hostname: %q", s)
 			}
 			return nil
 		}).
@@ -166,6 +177,10 @@ func ParseFlags(args []string, version string) (*ParsedFlags, error) {
 
 	tcp.String("address", "", "TCP target address").
 		Validate(func(s string) error {
+			s = strings.TrimSpace(s)
+			if utils.IsResolvableValue(s) {
+				return nil
+			}
 			if _, _, err := net.SplitHostPort(s); err != nil {
 				return fmt.Errorf("TCP address must be host:port (e.g. 127.0.0.1:80): %w", err)
 			}
