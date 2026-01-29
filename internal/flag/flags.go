@@ -61,10 +61,10 @@ func ParseFlags(args []string, version string) (*ParsedFlags, error) {
 			return nil
 		}).
 		Required()
-	http.Duration("interval", 1*time.Second, "Time between HTTP requests. Can be globally overridden with --default-interval.").
+	http.Duration("interval", 0*time.Second, "Time between HTTP requests. Defaults to --default-interval when unset or 0.").
 		Validate(func(d time.Duration) error {
-			if d <= 0 {
-				return errors.New("interval must be positive")
+			if d < 0 {
+				return errors.New("interval must be non-negative")
 			}
 			return nil
 		}).
@@ -110,10 +110,10 @@ func ParseFlags(args []string, version string) (*ParsedFlags, error) {
 			return nil
 		}).
 		Required()
-	icmp.Duration("interval", 1*time.Second, "Time between ICMP requests. Can be globally overridden with --default-interval.").
+	icmp.Duration("interval", 0*time.Second, "Time between ICMP requests. Defaults to --default-interval when unset or 0.").
 		Validate(func(d time.Duration) error {
-			if d <= 0 {
-				return errors.New("interval must be positive")
+			if d < 0 {
+				return errors.New("interval must be non-negative")
 			}
 			return nil
 		}).
@@ -154,10 +154,10 @@ func ParseFlags(args []string, version string) (*ParsedFlags, error) {
 			return nil
 		}).
 		Placeholder("DURATION")
-	tcp.Duration("interval", 1*time.Second, "Time between TCP requests. Can be globally overridden with --default-interval.").
+	tcp.Duration("interval", 0*time.Second, "Time between TCP requests. Defaults to --default-interval when unset or 0.").
 		Validate(func(d time.Duration) error {
-			if d <= 0 {
-				return errors.New("interval must be positive")
+			if d < 0 {
+				return errors.New("interval must be non-negative")
 			}
 			return nil
 		}).

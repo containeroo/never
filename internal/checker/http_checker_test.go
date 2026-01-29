@@ -48,7 +48,9 @@ func TestHTTPChecker(t *testing.T) {
 		server := httptest.NewServer(handler)
 		defer server.Close()
 
-		checker, err := newHTTPChecker("example", server.URL, WithHTTPHeaders(map[string]string{"Authorization": "Bearer token"}))
+		checker, err := newHTTPChecker("example", server.URL, WithHTTPHeaders(http.Header{
+			"Authorization": []string{"Bearer token"},
+		}))
 		require.NoError(t, err)
 
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)

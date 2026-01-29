@@ -102,7 +102,7 @@ Types are: `http`, `icmp` or `tcp`.
   **Resolvable:** See [Resolving Variables](#resolving-variables) below.
 
 - **`--tcp.<IDENTIFIER>.interval`** = `duration`
-  The interval between ICMP requests (e.g., `1s`). Overwrites the global `--default-interval`.
+  The interval between TCP requests (e.g., `1s`). Overwrites the global `--default-interval`.
 
 #### Resolving variables
 
@@ -142,7 +142,7 @@ never \
 ```sh
 never \
   --http.web.address=http://example.com:80 \
-  --tcp.db.address=tcp://localhost:5432 \
+  --tcp.db.address=localhost:5432 \
   --default-interval=10s
 ```
 

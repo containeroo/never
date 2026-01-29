@@ -22,7 +22,7 @@ type HTTPChecker struct {
 	name                string
 	address             string
 	method              string
-	headers             map[string]string
+	headers             http.Header
 	expectedStatusCodes []int
 	skipTLSVerify       bool
 	timeout             time.Duration
@@ -38,8 +38,10 @@ func (c *HTTPChecker) Check(ctx context.Context) error {
 		return fmt.Errorf("failed to create request: %w", err)
 	}
 
-	for key, value := range c.headers {
-		req.Header.Add(key, value)
+	for key, values := range c.headers {
+		for _, value := range values {
+			req.Header.Add(key, value)
+		}
 	}
 
 	resp, err := c.client.Do(req)
@@ -61,7 +63,7 @@ func newHTTPChecker(name, address string, opts ...Option) (*HTTPChecker, error) 
 		name:                name,
 		address:             address,
 		method:              defaultHTTPMethod,
-		headers:             make(map[string]string),
+		headers:             make(http.Header),
 		expectedStatusCodes: defaultHTTPExpectedStatusCodes,
 		skipTLSVerify:       defaultHTTPSkipTLSVerify,
 		timeout:             defaultHTTPTimeout,
@@ -94,7 +96,7 @@ func WithHTTPMethod(method string) Option {
 }
 
 // WithHTTPHeaders sets the HTTP headers for the HTTPChecker.
-func WithHTTPHeaders(headers map[string]string) Option {
+func WithHTTPHeaders(headers http.Header) Option {
 	return OptionFunc(func(c Checker) {
 		if httpChecker, ok := c.(*HTTPChecker); ok {
 			httpChecker.headers = headers

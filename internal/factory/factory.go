@@ -2,6 +2,7 @@ package factory
 
 import (
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 
@@ -71,7 +72,7 @@ func BuildCheckers(dynamicGroups []*tinyflags.DynamicGroup, defaultInterval time
 
 			case checker.TCP:
 				timeout := tinyflags.GetOrDefaultDynamic[time.Duration](group, id, "timeout")
-				opts = append(opts, checker.WithHTTPTimeout(timeout))
+				opts = append(opts, checker.WithTCPTimeout(timeout))
 
 			case checker.ICMP:
 				rt := tinyflags.GetOrDefaultDynamic[time.Duration](group, id, "read-timeout")
@@ -101,14 +102,14 @@ func BuildCheckers(dynamicGroups []*tinyflags.DynamicGroup, defaultInterval time
 	return checkers, nil
 }
 
-// createHTTPHeadersMap creates a map or slice-based map of HTTP headers from a slice of strings.
-// If allowDuplicateHeaders is true, headers with the same key will be overwritten.
-func createHTTPHeadersMap(headers []string, allowDuplicateHeaders bool) (map[string]string, error) {
+// createHTTPHeadersMap creates an http.Header from a slice of key=value strings.
+// If allowDuplicateHeaders is true, headers with the same key will be appended.
+func createHTTPHeadersMap(headers []string, allowDuplicateHeaders bool) (http.Header, error) {
 	if headers == nil {
 		return nil, fmt.Errorf("headers cannot be nil")
 	}
 
-	headersMap := make(map[string]string)
+	headersMap := make(http.Header)
 
 	for _, header := range headers {
 		parts := strings.SplitN(header, "=", 2)
@@ -129,7 +130,12 @@ func createHTTPHeadersMap(headers []string, allowDuplicateHeaders bool) (map[str
 			return nil, fmt.Errorf("duplicate header: %q", header)
 		}
 
-		headersMap[key] = resolved
+		if allowDuplicateHeaders {
+			headersMap.Add(key, resolved)
+			continue
+		}
+
+		headersMap.Set(key, resolved)
 	}
 
 	return headersMap, nil
