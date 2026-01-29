@@ -52,4 +52,12 @@ func TestParseFlags(t *testing.T) {
 
 		assert.EqualError(t, err, "invalid value for flag --default-interval: time: invalid duration \"invalid\".")
 	})
+
+	t.Run("ICMP Hostname Allowed", func(t *testing.T) {
+		t.Parallel()
+
+		args := []string{"--icmp.host.address=example.com"}
+		_, err := ParseFlags(args, "1.0.0")
+		require.NoError(t, err)
+	})
 }
