@@ -53,7 +53,7 @@ func TestRunAllHTTPReady(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	err = RunAll(ctx, checkers, logger)
+	err = RunAll(ctx, checkers, -1, logger)
 	assert.NoError(t, err)
 
 	// Assert output contains readiness line
@@ -89,7 +89,7 @@ func TestRunAllTCPReady(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	err = RunAll(ctx, checkers, logger)
+	err = RunAll(ctx, checkers, -1, logger)
 	assert.NoError(t, err)
 
 	lines := strings.Split(strings.TrimSpace(output.String()), "\n")
@@ -138,7 +138,7 @@ func TestRunAllMultipleReady(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	err = RunAll(ctx, checkers, logger)
+	err = RunAll(ctx, checkers, -1, logger)
 	assert.NoError(t, err)
 
 	// Order is nondeterministic; assert both readiness messages appear.
@@ -156,7 +156,7 @@ func TestRunAllNoCheckers(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
-	err := RunAll(ctx, nil, logger)
+	err := RunAll(ctx, nil, -1, logger)
 	require.Error(t, err)
 	assert.True(t, errors.Is(err, ErrNoCheckers), "expected ErrNoCheckers, got %v", err)
 	// optional exact message assertion:
@@ -186,9 +186,36 @@ func TestRunAllPropagatesError(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 600*time.Millisecond)
 	defer cancel()
 
-	err = RunAll(ctx, checkers, logger)
+	err = RunAll(ctx, checkers, -1, logger)
 	require.Error(t, err)
 
 	// The exact inner error can vary (timeout, context deadline), so check the runner prefix.
+	assert.Contains(t, err.Error(), "checker 'HTTPServer' failed")
+}
+
+func TestRunAllMaxAttempts(t *testing.T) {
+	t.Parallel()
+
+	args := []string{
+		"--http.httpcheck.name=HTTPServer",
+		"--http.httpcheck.address=http://localhost:19998",
+		"--http.httpcheck.interval=50ms",
+		"--http.httpcheck.timeout=50ms",
+	}
+
+	fs, err := flag.ParseFlags(args, version)
+	require.NoError(t, err)
+
+	checkers, err := factory.BuildCheckers(fs.DynamicGroups, fs.DefaultCheckInterval)
+	require.NoError(t, err)
+
+	var output strings.Builder
+	logger := logging.SetupLogger(version, &output)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	err = RunAll(ctx, checkers, 2, logger)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "checker 'HTTPServer' failed")
 }

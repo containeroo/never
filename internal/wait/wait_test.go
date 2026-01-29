@@ -2,6 +2,7 @@ package wait
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"net"
 	"net/http"
@@ -17,9 +18,11 @@ func TestWaitUntilReady_ReadyHTTP(t *testing.T) {
 	t.Parallel()
 
 	server := &http.Server{Addr: ":9082"}
-	http.HandleFunc("/ready", func(w http.ResponseWriter, r *http.Request) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/ready", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
+	server.Handler = mux
 	go func() { _ = server.ListenAndServe() }()
 	defer server.Close() // nolint:errcheck
 
@@ -34,7 +37,7 @@ func TestWaitUntilReady_ReadyHTTP(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-	err = WaitUntilReady(ctx, 100*time.Millisecond, checker, logger)
+	err = WaitUntilReady(ctx, 100*time.Millisecond, -1, checker, logger)
 	if err != nil {
 		t.Errorf("Expected no error, got %v", err)
 	}
@@ -50,10 +53,12 @@ func TestWaitUntilReady_HTTPFailsInitially(t *testing.T) {
 	t.Parallel()
 
 	server := &http.Server{Addr: ":9083"}
-	http.HandleFunc("/fail", func(w http.ResponseWriter, r *http.Request) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/fail", func(w http.ResponseWriter, r *http.Request) {
 		time.Sleep(500 * time.Millisecond) // Simulate a delayed start
 		w.WriteHeader(http.StatusOK)
 	})
+	server.Handler = mux
 	go func() { _ = server.ListenAndServe() }()
 	defer server.Close() // nolint:errcheck
 
@@ -68,7 +73,7 @@ func TestWaitUntilReady_HTTPFailsInitially(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-	err = WaitUntilReady(ctx, 100*time.Millisecond, checker, logger)
+	err = WaitUntilReady(ctx, 100*time.Millisecond, -1, checker, logger)
 	if err != nil {
 		t.Errorf("Expected no error, got %v", err)
 	}
@@ -84,10 +89,12 @@ func TestWaitUntilReady_HTTPContextCanceled(t *testing.T) {
 	t.Parallel()
 
 	server := &http.Server{Addr: ":9084"}
-	http.HandleFunc("/canceled", func(w http.ResponseWriter, r *http.Request) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/canceled", func(w http.ResponseWriter, r *http.Request) {
 		time.Sleep(500 * time.Millisecond)
 		w.WriteHeader(http.StatusOK)
 	})
+	server.Handler = mux
 	go func() { _ = server.ListenAndServe() }()
 	defer server.Close() // nolint:errcheck
 
@@ -102,7 +109,7 @@ func TestWaitUntilReady_HTTPContextCanceled(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 	defer cancel()
 
-	err = WaitUntilReady(ctx, 50*time.Millisecond, checker, logger)
+	err = WaitUntilReady(ctx, 50*time.Millisecond, -1, checker, logger)
 	if err == nil {
 		t.Fatalf("Expected context cancellation error, got nil")
 	}
@@ -134,7 +141,7 @@ func TestWaitUntilReady_ReadyTCP(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-	err = WaitUntilReady(ctx, 100*time.Millisecond, checker, logger)
+	err = WaitUntilReady(ctx, 100*time.Millisecond, -1, checker, logger)
 	if err != nil {
 		t.Errorf("Expected no error, got %v", err)
 	}
@@ -175,7 +182,7 @@ func TestWaitUntilReady_TCPFailsInitially(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-	err = WaitUntilReady(ctx, 100*time.Millisecond, checker, logger)
+	err = WaitUntilReady(ctx, 100*time.Millisecond, -1, checker, logger)
 	if err != nil {
 		t.Errorf("Expected no error, got %v", err)
 	}
@@ -201,7 +208,7 @@ func TestWaitUntilReady_TCPContextCanceled(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 	defer cancel()
 
-	err = WaitUntilReady(ctx, 50*time.Millisecond, checker, logger)
+	err = WaitUntilReady(ctx, 50*time.Millisecond, -1, checker, logger)
 	if err == nil {
 		t.Fatalf("Expected context cancellation error, got nil")
 	}
@@ -229,5 +236,28 @@ func TestNewStoppedTimer(t *testing.T) {
 	case <-timer.C:
 	case <-time.After(50 * time.Millisecond):
 		t.Fatal("expected timer to fire after reset")
+	}
+}
+
+func TestWaitUntilReady_MaxAttempts(t *testing.T) {
+	t.Parallel()
+
+	checker, err := checker.NewChecker(checker.TCP, "TCPServer", "localhost:59999")
+	if err != nil {
+		t.Fatalf("Failed to create TCPChecker: %v", err)
+	}
+
+	var output strings.Builder
+	logger := slog.New(slog.NewTextHandler(&output, nil))
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	err = WaitUntilReady(ctx, 10*time.Millisecond, 2, checker, logger)
+	if err == nil {
+		t.Fatal("Expected max attempts error, got nil")
+	}
+	if !errors.Is(err, ErrMaxAttemptsExceeded) {
+		t.Fatalf("Expected ErrMaxAttemptsExceeded, got %v", err)
 	}
 }

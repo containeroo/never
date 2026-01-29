@@ -7,6 +7,7 @@ import (
 	"log/slog"
 
 	"github.com/containeroo/never/internal/factory"
+	"github.com/containeroo/never/internal/utils"
 	"github.com/containeroo/never/internal/wait"
 	"golang.org/x/sync/errgroup"
 )
@@ -15,7 +16,7 @@ import (
 var ErrNoCheckers = errors.New("no checkers to run")
 
 // RunAll runs all checkers concurrently and returns the first error or context cancellation.
-func RunAll(ctx context.Context, checkers []factory.CheckerWithInterval, logger *slog.Logger) error {
+func RunAll(ctx context.Context, checkers []factory.CheckerWithInterval, maxAttempts int, logger *slog.Logger) error {
 	if len(checkers) == 0 {
 		return ErrNoCheckers
 	}
@@ -26,7 +27,8 @@ func RunAll(ctx context.Context, checkers []factory.CheckerWithInterval, logger 
 		checker := chk             // Capture loop variable
 		name := chk.Checker.Name() // avoid re-calling in error path
 		eg.Go(func() error {
-			err := wait.WaitUntilReady(ctx, checker.Interval, checker.Checker, logger)
+			attempts := utils.DefaultIfZero(checker.MaxAttempts, maxAttempts)
+			err := wait.WaitUntilReady(ctx, checker.Interval, attempts, checker.Checker, logger)
 			if err != nil {
 				return fmt.Errorf("checker '%s' failed: %w", name, err)
 			}

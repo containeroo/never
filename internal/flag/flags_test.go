@@ -60,4 +60,47 @@ func TestParseFlags(t *testing.T) {
 		_, err := ParseFlags(args, "1.0.0")
 		require.NoError(t, err)
 	})
+
+	t.Run("Max Attempts Valid", func(t *testing.T) {
+		t.Parallel()
+
+		args := []string{"--max-attempts=3"}
+
+		parsedFlags, err := ParseFlags(args, "1.0.0")
+		require.NoError(t, err)
+		assert.Equal(t, 3, parsedFlags.MaxAttempts)
+	})
+
+	t.Run("Max Attempts Endless", func(t *testing.T) {
+		t.Parallel()
+
+		args := []string{"--max-attempts=-1"}
+
+		parsedFlags, err := ParseFlags(args, "1.0.0")
+		require.NoError(t, err)
+		assert.Equal(t, -1, parsedFlags.MaxAttempts)
+	})
+
+	t.Run("Max Attempts Invalid Zero", func(t *testing.T) {
+		t.Parallel()
+
+		args := []string{"--max-attempts=0"}
+
+		_, err := ParseFlags(args, "1.0.0")
+		require.Error(t, err)
+	})
+
+	t.Run("Per-Target Max Attempts", func(t *testing.T) {
+		t.Parallel()
+
+		args := []string{
+			"--max-attempts=5",
+			"--http.web.address=http://example.com",
+			"--http.web.max-attempts=2",
+		}
+
+		parsedFlags, err := ParseFlags(args, "1.0.0")
+		require.NoError(t, err)
+		assert.Equal(t, 5, parsedFlags.MaxAttempts)
+	})
 }

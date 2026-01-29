@@ -14,7 +14,6 @@ import (
 )
 
 const (
-	paramDefaultInterval             string        = "default-interval"
 	defaultCheckInterval             time.Duration = 2 * time.Second
 	defaultHTTPAllowDuplicateHeaders bool          = false
 	defaultHTTPSkipTLSVerify         bool          = false
@@ -26,6 +25,7 @@ type ParsedFlags struct {
 	ShowVersion          bool
 	Version              string
 	DefaultCheckInterval time.Duration
+	MaxAttempts          int
 	DynamicGroups        []*tinyflags.DynamicGroup
 }
 
@@ -36,23 +36,21 @@ func ParseFlags(args []string, version string) (*ParsedFlags, error) {
 	tf.SortedFlags()
 	tf.SortedGroups()
 
-	interval := tf.Duration(
-		paramDefaultInterval,
-		defaultCheckInterval,
-		"Default interval between checks. Can be overridden for each target.",
-	).
+	interval := tf.Duration("default-interval", defaultCheckInterval, "Default interval between checks. Can be overridden for each target.").
 		Placeholder("DURATION").
+		Value()
+
+	maxAttempts := tf.Int("max-attempts", -1, "Maximum attempts before giving up (-1 for endless).").
+		Validate(validateMaxAttempts).
+		Placeholder("N").
 		Value()
 
 	tf.Note("\nFor more information, see https://github.com/containeroo/never")
 
 	// HTTP flags
 	http := tf.DynamicGroup("http").Title("HTTP")
-
 	http.String("name", "", "Name of the HTTP checker. Defaults to <ID>.")
-
 	http.String("method", "GET", "HTTP method to use")
-
 	http.String("address", "", "HTTP target URL").
 		Validate(func(s string) error {
 			s = strings.TrimSpace(s)
@@ -77,12 +75,17 @@ func ParseFlags(args []string, version string) (*ParsedFlags, error) {
 			return nil
 		}).
 		Placeholder("DURATION")
-
+	http.Int("max-attempts", 0, "Maximum attempts before giving up. Defaults to --max-attempts when unset or 0.").
+		Validate(func(v int) error {
+			if v == 0 {
+				return nil
+			}
+			return validateMaxAttempts(v)
+		}).
+		Placeholder("N")
 	http.StringSlice("header", []string{}, "HTTP headers to send").
 		Placeholder("KEY=VALUE)")
-
 	http.Bool("allow-duplicate-headers", defaultHTTPAllowDuplicateHeaders, "Allow duplicate HTTP headers")
-
 	http.StringSlice("expected-status-codes",
 		[]string{"200"},
 		"Expected HTTP status codes. Comma-separated list of status codes, ranges possible (eg \"200-299\", \"300,301\")",
@@ -99,7 +102,6 @@ func ParseFlags(args []string, version string) (*ParsedFlags, error) {
 		Placeholder("CODES...")
 
 	http.Bool("skip-tls-verify", defaultHTTPSkipTLSVerify, "Skip TLS verification")
-
 	http.Duration("timeout", 2*time.Second, "Request timeout").
 		Validate(func(d time.Duration) error {
 			if d <= 0 {
@@ -111,9 +113,7 @@ func ParseFlags(args []string, version string) (*ParsedFlags, error) {
 
 	// ICMP flags
 	icmp := tf.DynamicGroup("icmp").Title("ICMP")
-
 	icmp.String("name", "", "Name of the ICMP checker. Defaults to <ID>.")
-
 	icmp.String("address", "", "ICMP target address").
 		Validate(func(s string) error {
 			s = strings.TrimSpace(s)
@@ -142,7 +142,6 @@ func ParseFlags(args []string, version string) (*ParsedFlags, error) {
 			return nil
 		}).
 		Required()
-
 	icmp.Duration("interval", 0*time.Second, "Time between ICMP requests. Defaults to --default-interval when unset or 0.").
 		Validate(func(d time.Duration) error {
 			if d < 0 {
@@ -151,7 +150,14 @@ func ParseFlags(args []string, version string) (*ParsedFlags, error) {
 			return nil
 		}).
 		Placeholder("DURATION")
-
+	icmp.Int("max-attempts", 0, "Maximum attempts before giving up. Defaults to --max-attempts when unset or 0.").
+		Validate(func(v int) error {
+			if v == 0 {
+				return nil
+			}
+			return validateMaxAttempts(v)
+		}).
+		Placeholder("N")
 	icmp.Duration("read-timeout", 2*time.Second, "Timeout for ICMP read").
 		Validate(func(d time.Duration) error {
 			if d <= 0 {
@@ -160,7 +166,6 @@ func ParseFlags(args []string, version string) (*ParsedFlags, error) {
 			return nil
 		}).
 		Placeholder("DURATION")
-
 	icmp.Duration("write-timeout", 2*time.Second, "Timeout for ICMP write").
 		Validate(func(d time.Duration) error {
 			if d <= 0 {
@@ -172,9 +177,7 @@ func ParseFlags(args []string, version string) (*ParsedFlags, error) {
 
 	// TCP flags
 	tcp := tf.DynamicGroup("tcp").Title("TCP")
-
 	tcp.String("name", "", "Name of the TCP checker. Defaults to <ID>.")
-
 	tcp.String("address", "", "TCP target address").
 		Validate(func(s string) error {
 			s = strings.TrimSpace(s)
@@ -187,7 +190,6 @@ func ParseFlags(args []string, version string) (*ParsedFlags, error) {
 			return nil
 		}).
 		Required()
-
 	tcp.Duration("timeout", 2*time.Second, "Timeout for TCP connection").
 		Validate(func(d time.Duration) error {
 			if d <= 0 {
@@ -196,7 +198,6 @@ func ParseFlags(args []string, version string) (*ParsedFlags, error) {
 			return nil
 		}).
 		Placeholder("DURATION")
-
 	tcp.Duration("interval", 0*time.Second, "Time between TCP requests. Defaults to --default-interval when unset or 0.").
 		Validate(func(d time.Duration) error {
 			if d < 0 {
@@ -205,6 +206,14 @@ func ParseFlags(args []string, version string) (*ParsedFlags, error) {
 			return nil
 		}).
 		Placeholder("DURATION")
+	tcp.Int("max-attempts", 0, "Maximum attempts before giving up. Defaults to --max-attempts when unset or 0.").
+		Validate(func(v int) error {
+			if v == 0 {
+				return nil
+			}
+			return validateMaxAttempts(v)
+		}).
+		Placeholder("N")
 
 	// Parse unknown arguments with dynamic flags
 	if err := tf.Parse(args); err != nil {
@@ -213,6 +222,18 @@ func ParseFlags(args []string, version string) (*ParsedFlags, error) {
 
 	return &ParsedFlags{
 		DefaultCheckInterval: *interval,
+		MaxAttempts:          *maxAttempts,
 		DynamicGroups:        tf.DynamicGroups(),
 	}, nil
+}
+
+// validateMaxAttempts validates the max-attempts flag.
+func validateMaxAttempts(v int) error {
+	if v == 0 {
+		return errors.New("max-attempts must be -1 or positive")
+	}
+	if v < -1 {
+		return errors.New("max-attempts must be -1 or positive")
+	}
+	return nil
 }

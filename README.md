@@ -21,6 +21,7 @@ Designed to run as a **Kubernetes `initContainer`**, `N.E.V.E.R.` ensures your s
 - Supports multiple concurrent targets, each with its own config.
 - Configurable entirely via command-line arguments.
 - Exits with `0` the moment everything is ready.
+- Exits with `1` if any target exceeds `--max-attempts`.
 
 Whether you're waiting on a `port`, `ping`, or a `200 OK`, `N.E.V.E.R.` backs down never.
 
@@ -33,6 +34,7 @@ Whether you're waiting on a `port`, `ping`, or a `200 OK`, `N.E.V.E.R.` backs do
 | Flag                 | Type     | Default | Description                                                         |
 | -------------------- | -------- | ------- | ------------------------------------------------------------------- |
 | `--default-interval` | duration | `2s`    | Default interval between checks. Can be overridden for each target. |
+| `--max-attempts`     | int      | `-1`    | Maximum attempts before giving up. Use `-1` to retry endlessly.     |
 | `--version`          | bool     | `false` | Show version and exit.                                              |
 | `--help`, `-h`       | bool     | `false` | Show help.                                                          |
 
@@ -51,8 +53,11 @@ Types are: `http`, `icmp` or `tcp`.
   The target's address.
   **Resolvable:** See [Resolving Variables](#resolving-variables) below.
 
-  - **`--http.<IDENTIFIER>.interval`** = `duration`
-    The interval between HTTP requests (e.g., `1s`). Overwrites the global `--default-interval`.
+- **`--http.<IDENTIFIER>.interval`** = `duration`
+  The interval between HTTP requests (e.g., `1s`). Overwrites the global `--default-interval`.
+
+- **`--http.<IDENTIFIER>.max-attempts`** = `int`
+  Maximum attempts before giving up. Defaults to `--max-attempts` when unset or `0`.
 
 - **`--http.<IDENTIFIER>.method`** = `string`
   The HTTP method to use (e.g., `GET`, `POST`). Defaults to `GET`.
@@ -86,6 +91,9 @@ Types are: `http`, `icmp` or `tcp`.
 - **`--icmp.<IDENTIFIER>.interval`** = `duration`
   The interval between ICMP requests (e.g., `1s`). Overwrites the global `--default-interval`.
 
+- **`--icmp.<IDENTIFIER>.max-attempts`** = `int`
+  Maximum attempts before giving up. Defaults to `--max-attempts` when unset or `0`.
+
 - **`--icmp.<IDENTIFIER>.read-timeout`** = `duration`
   The read timeout for the ICMP connection (e.g., `1s`). Defaults to `1s`.
 
@@ -103,6 +111,9 @@ Types are: `http`, `icmp` or `tcp`.
 
 - **`--tcp.<IDENTIFIER>.interval`** = `duration`
   The interval between TCP requests (e.g., `1s`). Overwrites the global `--default-interval`.
+
+- **`--tcp.<IDENTIFIER>.max-attempts`** = `int`
+  Maximum attempts before giving up. Defaults to `--max-attempts` when unset or `0`.
 
 #### Resolving variables
 

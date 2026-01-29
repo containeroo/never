@@ -43,7 +43,7 @@ func Run(ctx context.Context, version string, args []string, output io.Writer) e
 	}
 
 	// Run all checkers
-	if err = runner.RunAll(ctx, checkers, logger); err != nil {
+	if err = runner.RunAll(ctx, checkers, flags.MaxAttempts, logger); err != nil {
 		logger.Error("failed to run all checkers", "err", err)
 		return err
 	}

@@ -52,3 +52,12 @@ func IsHostnameLike(s string) bool {
 func isAlphaNum(ch byte) bool {
 	return ('a' <= ch && ch <= 'z') || ('A' <= ch && ch <= 'Z') || ('0' <= ch && ch <= '9')
 }
+
+// DefaultIfZero returns fallback when value is the zero value.
+func DefaultIfZero[T comparable](value, fallback T) T {
+	var zero T
+	if value == zero {
+		return fallback
+	}
+	return value
+}

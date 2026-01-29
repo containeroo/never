@@ -16,6 +16,8 @@ import (
 type CheckerWithInterval struct {
 	Interval time.Duration
 	Checker  checker.Checker
+	// MaxAttempts == 0 means use global; -1 means endless retries.
+	MaxAttempts int
 }
 
 // BuildCheckers creates a list of CheckerWithInterval from the parsed dynflags configuration.
@@ -38,6 +40,10 @@ func BuildCheckers(dynamicGroups []*tinyflags.DynamicGroup, defaultInterval time
 			interval := defaultInterval
 			if v, _ := tinyflags.GetDynamic[time.Duration](group, id, "interval"); v != 0 {
 				interval = v
+			}
+			maxAttempts := 0
+			if v, _ := tinyflags.GetDynamic[int](group, id, "max-attempts"); v != 0 {
+				maxAttempts = v
 			}
 
 			var opts []checker.Option
@@ -93,8 +99,9 @@ func BuildCheckers(dynamicGroups []*tinyflags.DynamicGroup, defaultInterval time
 			}
 
 			checkers = append(checkers, CheckerWithInterval{
-				Interval: interval,
-				Checker:  instance,
+				Interval:    interval,
+				Checker:     instance,
+				MaxAttempts: maxAttempts,
 			})
 		}
 	}

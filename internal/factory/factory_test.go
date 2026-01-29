@@ -27,6 +27,7 @@ func TestBuildCheckers(t *testing.T) {
 		http.StringSlice("expected-status-codes", []string{"200"}, "Expected HTTP status codes")
 		http.Bool("skip-tls-verify", true, "Skip TLS verification")
 		http.Duration("timeout", 22*time.Second, "Timeout in seconds")
+		http.Int("max-attempts", 0, "Max attempts")
 
 		args := []string{
 			"--http.mygroup.address=http://example.com",
@@ -35,6 +36,7 @@ func TestBuildCheckers(t *testing.T) {
 			"--http.mygroup.header=Content-Type=application/json",
 			"--http.mygroup.skip-tls-verify=true",
 			"--http.mygroup.timeout=33s",
+			"--http.mygroup.max-attempts=3",
 		}
 		err := tf.Parse(args)
 		require.NoError(t, err)
@@ -44,6 +46,7 @@ func TestBuildCheckers(t *testing.T) {
 		assert.Len(t, checkers, 1)
 		assert.Equal(t, "http://example.com", checkers[0].Checker.Address())
 		assert.Equal(t, 5*time.Second, checkers[0].Interval)
+		assert.Equal(t, 3, checkers[0].MaxAttempts)
 	})
 
 	t.Run("Invalid Check Type", func(t *testing.T) {
