@@ -47,8 +47,11 @@ func ParseFlags(args []string, version string) (*ParsedFlags, error) {
 
 	// HTTP flags
 	http := tf.DynamicGroup("http").Title("HTTP")
+
 	http.String("name", "", "Name of the HTTP checker. Defaults to <ID>.")
+
 	http.String("method", "GET", "HTTP method to use")
+
 	http.String("address", "", "HTTP target URL").
 		Validate(func(s string) error {
 			u, err := url.Parse(s)
@@ -69,9 +72,16 @@ func ParseFlags(args []string, version string) (*ParsedFlags, error) {
 			return nil
 		}).
 		Placeholder("DURATION")
-	http.StringSlice("header", []string{}, "HTTP headers to send").Placeholder("BLUB")
+
+	http.StringSlice("header", []string{}, "HTTP headers to send").
+		Placeholder("KEY=VALUE)")
+
 	http.Bool("allow-duplicate-headers", defaultHTTPAllowDuplicateHeaders, "Allow duplicate HTTP headers")
-	http.StringSlice("expected-status-codes", []string{"200"}, "Expected HTTP status codes. Comma-separated list of status codes, ranges possible (eg \"200-299\", \"300,301\")").
+
+	http.StringSlice("expected-status-codes",
+		[]string{"200"},
+		"Expected HTTP status codes. Comma-separated list of status codes, ranges possible (eg \"200-299\", \"300,301\")",
+	).
 		Validate(func(codes string) error {
 			for _, code := range strings.Split(codes, ",") {
 				_, err := httputils.ParseStatusCodes(code)
@@ -82,7 +92,9 @@ func ParseFlags(args []string, version string) (*ParsedFlags, error) {
 			return nil
 		}).
 		Placeholder("CODES...")
+
 	http.Bool("skip-tls-verify", defaultHTTPSkipTLSVerify, "Skip TLS verification")
+
 	http.Duration("timeout", 2*time.Second, "Request timeout").
 		Validate(func(d time.Duration) error {
 			if d <= 0 {
@@ -94,7 +106,9 @@ func ParseFlags(args []string, version string) (*ParsedFlags, error) {
 
 	// ICMP flags
 	icmp := tf.DynamicGroup("icmp").Title("ICMP")
+
 	icmp.String("name", "", "Name of the ICMP checker. Defaults to <ID>.")
+
 	icmp.String("address", "", "ICMP target address").
 		Validate(func(s string) error {
 			if ip := net.ParseIP(s); ip != nil {
@@ -110,6 +124,7 @@ func ParseFlags(args []string, version string) (*ParsedFlags, error) {
 			return nil
 		}).
 		Required()
+
 	icmp.Duration("interval", 0*time.Second, "Time between ICMP requests. Defaults to --default-interval when unset or 0.").
 		Validate(func(d time.Duration) error {
 			if d < 0 {
@@ -118,6 +133,7 @@ func ParseFlags(args []string, version string) (*ParsedFlags, error) {
 			return nil
 		}).
 		Placeholder("DURATION")
+
 	icmp.Duration("read-timeout", 2*time.Second, "Timeout for ICMP read").
 		Validate(func(d time.Duration) error {
 			if d <= 0 {
@@ -126,6 +142,7 @@ func ParseFlags(args []string, version string) (*ParsedFlags, error) {
 			return nil
 		}).
 		Placeholder("DURATION")
+
 	icmp.Duration("write-timeout", 2*time.Second, "Timeout for ICMP write").
 		Validate(func(d time.Duration) error {
 			if d <= 0 {
@@ -137,7 +154,9 @@ func ParseFlags(args []string, version string) (*ParsedFlags, error) {
 
 	// TCP flags
 	tcp := tf.DynamicGroup("tcp").Title("TCP")
+
 	tcp.String("name", "", "Name of the TCP checker. Defaults to <ID>.")
+
 	tcp.String("address", "", "TCP target address").
 		Validate(func(s string) error {
 			if _, _, err := net.SplitHostPort(s); err != nil {
@@ -146,6 +165,7 @@ func ParseFlags(args []string, version string) (*ParsedFlags, error) {
 			return nil
 		}).
 		Required()
+
 	tcp.Duration("timeout", 2*time.Second, "Timeout for TCP connection").
 		Validate(func(d time.Duration) error {
 			if d <= 0 {
@@ -154,6 +174,7 @@ func ParseFlags(args []string, version string) (*ParsedFlags, error) {
 			return nil
 		}).
 		Placeholder("DURATION")
+
 	tcp.Duration("interval", 0*time.Second, "Time between TCP requests. Defaults to --default-interval when unset or 0.").
 		Validate(func(d time.Duration) error {
 			if d < 0 {
