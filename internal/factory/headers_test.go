@@ -18,6 +18,12 @@ func TestCreateHTTPHeadersMap_DuplicateHeadersAllowed(t *testing.T) {
 	assert.Equal(t, []string{"one", "two"}, headers["X-Test"])
 }
 
+func TestCreateHTTPHeadersMap_NilHeadersAllowed(t *testing.T) {
+	headers, err := createHTTPHeadersMap(nil, false)
+	require.NoError(t, err)
+	assert.Equal(t, http.Header{}, headers)
+}
+
 func TestCreateHTTPHeadersMap_ResolvableValue(t *testing.T) {
 	require.NoError(t, os.Setenv("NEVER_TEST_HEADER", "secret"))
 	t.Cleanup(func() {

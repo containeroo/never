@@ -112,11 +112,11 @@ func BuildCheckers(dynamicGroups []*tinyflags.DynamicGroup, defaultInterval time
 // createHTTPHeadersMap creates an http.Header from a slice of key=value strings.
 // If allowDuplicateHeaders is true, headers with the same key will be appended.
 func createHTTPHeadersMap(headers []string, allowDuplicateHeaders bool) (http.Header, error) {
-	if headers == nil {
-		return nil, fmt.Errorf("headers cannot be nil")
-	}
-
 	headersMap := make(http.Header)
+
+	if headers == nil {
+		return headersMap, nil
+	}
 
 	for _, header := range headers {
 		parts := strings.SplitN(header, "=", 2)

@@ -150,5 +150,5 @@ func TestRunParseError(t *testing.T) {
 	err := Run(ctx, version, args, &output)
 
 	require.Error(t, err)
-	assert.EqualError(t, err, "unknown flag: --invalid")
+	assert.EqualError(t, err, "unknown flag --invalid")
 }

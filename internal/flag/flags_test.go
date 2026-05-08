@@ -50,7 +50,7 @@ func TestParseFlags(t *testing.T) {
 		_, err := ParseFlags(args, "1.0.0")
 		require.Error(t, err)
 
-		assert.EqualError(t, err, "invalid value for flag --default-interval: time: invalid duration \"invalid\".")
+		assert.EqualError(t, err, "invalid value for flag --default-interval: time: invalid duration \"invalid\"")
 	})
 
 	t.Run("ICMP Hostname Allowed", func(t *testing.T) {
