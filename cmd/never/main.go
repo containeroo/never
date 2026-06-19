@@ -16,7 +16,7 @@ func main() {
 	// Create a root context
 	ctx := context.Background()
 
-	if err := app.Run(ctx, Version, os.Args[1:], os.Stdout); err != nil {
+	if err := app.Run(ctx, Version, os.Args[1:], os.Stdout, os.Stderr); err != nil {
 		os.Exit(1)
 	}
 }

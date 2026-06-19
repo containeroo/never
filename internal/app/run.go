@@ -16,24 +16,20 @@ import (
 )
 
 // Run is the main function of the application.
-func Run(ctx context.Context, version string, args []string, output io.Writer) error {
-	// Create a new context that listens for interrupt signals
-	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
-	defer cancel()
-
+func Run(ctx context.Context, version string, args []string, stdOut, stdErr io.Writer) error {
 	// Parse command-line flags
 	flags, err := flag.ParseFlags(args, version)
-	// Setup logger immediately so startup errors are correctly logged.
-	logger := logging.SetupLogger(version, output)
-
 	if err != nil {
 		if tinyflags.IsHelpRequested(err) || tinyflags.IsVersionRequested(err) {
-			_, _ = fmt.Fprint(output, err.Error())
+			_, _ = fmt.Fprint(stdOut, err)
 			return nil
 		}
-		logger.Error("failed to parse command-line flags", "err", err)
+		_, _ = fmt.Fprintln(stdErr, err)
 		return err
 	}
+
+	// Setup logger immediately so startup errors are correctly logged.
+	logger := logging.SetupLogger(version, stdOut)
 
 	// Initialize target checkers
 	checkers, err := factory.BuildCheckers(flags.DynamicGroups, flags.DefaultCheckInterval)
@@ -41,6 +37,10 @@ func Run(ctx context.Context, version string, args []string, output io.Writer) e
 		logger.Error("failed to initialize target checkers", "err", err)
 		return err
 	}
+
+	// Create a new context that listens for interrupt signals
+	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
+	defer cancel()
 
 	// Run all checkers
 	if err = runner.RunAll(ctx, checkers, flags.MaxAttempts, logger); err != nil {

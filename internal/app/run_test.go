@@ -34,17 +34,17 @@ func TestRunHTTPReady(t *testing.T) {
 	go func() { _ = server.ListenAndServe() }()
 	defer server.Close() // nolint:errcheck
 
-	var output strings.Builder
+	var stdOut, stdErr strings.Builder
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	err := Run(ctx, version, args, &output)
+	err := Run(ctx, version, args, &stdOut, &stdErr)
 	require.NoError(t, err)
 
-	outputEntries := strings.Split(strings.TrimSpace(output.String()), "\n")
-	last := len(outputEntries) - 1
+	stdOutEntries := strings.Split(strings.TrimSpace(stdOut.String()), "\n")
+	last := len(stdOutEntries) - 1
 
-	assert.Contains(t, outputEntries[last], "HTTPServer is ready ✓")
+	assert.Contains(t, stdOutEntries[last], "HTTPServer is ready ✓")
 }
 
 func TestRunTCPReady(t *testing.T) {
@@ -64,15 +64,15 @@ func TestRunTCPReady(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	var output strings.Builder
+	var stdOut, stdErr strings.Builder
 
-	err = Run(ctx, version, args, &output)
+	err = Run(ctx, version, args, &stdOut, &stdErr)
 	require.NoError(t, err)
 
-	outputEntries := strings.Split(strings.TrimSpace(output.String()), "\n")
-	last := len(outputEntries) - 1
+	stdOutEntries := strings.Split(strings.TrimSpace(stdOut.String()), "\n")
+	last := len(stdOutEntries) - 1
 
-	assert.Contains(t, outputEntries[last], "TCPServer is ready ✓")
+	assert.Contains(t, stdOutEntries[last], "TCPServer is ready ✓")
 }
 
 func TestRunConfigErrorMissingTarget(t *testing.T) {
@@ -83,9 +83,9 @@ func TestRunConfigErrorMissingTarget(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	var output bytes.Buffer
+	var stdOut, stdErr bytes.Buffer
 
-	err := Run(ctx, version, args, &output)
+	err := Run(ctx, version, args, &stdOut, &stdErr)
 
 	require.Error(t, err)
 	assert.EqualError(t, err, "no checkers to run")
@@ -104,9 +104,9 @@ func TestRunConfigErrorUnsupportedCheckType(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	var output bytes.Buffer
+	var stdOut, stdErr bytes.Buffer
 
-	err := Run(ctx, version, args, &output)
+	err := Run(ctx, version, args, &stdOut, &stdErr)
 
 	require.Error(t, err)
 	assert.EqualError(t, err, "unknown dynamic group \"target\" in flag --target.unsupported.name=TestService\nunknown dynamic group \"target\" in flag --target.unsupported.address=localhost:8080\nunknown dynamic group \"target\" in flag --target.unsupported.interval=1s\nunknown dynamic group \"target\" in flag --target.unsupported.timeout=1s")
@@ -126,9 +126,9 @@ func TestRunConfigErrorInvalidHeaders(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	var output bytes.Buffer
+	var stdOut, stdErr bytes.Buffer
 
-	err := Run(ctx, version, args, &output)
+	err := Run(ctx, version, args, &stdOut, &stdErr)
 
 	require.Error(t, err)
 	assert.EqualError(t, err, "invalid \"--http.invalidheaders.header\": invalid header format: \"InvalidHeader\"")
@@ -145,9 +145,9 @@ func TestRunParseError(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	var output bytes.Buffer
+	var stdOut, stdErr bytes.Buffer
 
-	err := Run(ctx, version, args, &output)
+	err := Run(ctx, version, args, &stdOut, &stdErr)
 
 	require.Error(t, err)
 	assert.EqualError(t, err, "unknown flag --invalid")
