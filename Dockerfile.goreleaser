@@ -13,10 +13,10 @@ RUN mkdir -p /outfs/work /outfs/tmp \
   && chmod g+s /outfs/work /outfs/tmp
 
 FROM gcr.io/distroless/static:nonroot
-COPY never /never
+ARG TARGETARCH
+COPY linux/${TARGETARCH}/never /never
 COPY --from=prep /outfs/work /work
 COPY --from=prep /outfs/tmp  /tmp
 ENV HOME=/tmp
 WORKDIR /work
 ENTRYPOINT ["/never"]
-

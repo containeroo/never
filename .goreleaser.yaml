@@ -23,8 +23,6 @@ dockers:
     build_flag_templates:
       - --pull
       - --platform=linux/amd64
-      - --build-arg
-      - LDFLAGS=-s -w -X main.Version={{ .Tag }} -X main.Commit={{ .FullCommit }}
       - --label=org.opencontainers.image.title={{ .ProjectName }}
       - --label=org.opencontainers.image.description={{ .ProjectName }}
       - --label=org.opencontainers.image.url=https://github.com/containeroo/never
@@ -42,8 +40,6 @@ dockers:
     build_flag_templates:
       - --pull
       - --platform=linux/arm64
-      - --build-arg
-      - LDFLAGS=-s -w -X main.Version={{ .Tag }} -X main.Commit={{ .FullCommit }}
       - --label=org.opencontainers.image.title={{ .ProjectName }}
       - --label=org.opencontainers.image.description={{ .ProjectName }}
       - --label=org.opencontainers.image.url=https://github.com/containeroo/never
