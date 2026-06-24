@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.25
 
-FROM alpine:3.24 AS prep
+FROM --platform=$BUILDPLATFORM alpine:3.24 AS prep
 RUN mkdir -p /outfs/work /outfs/tmp \
   # Change group ownership of /work and /tmp to GID 0 (root group),
   # because OpenShift assigns containers a random UID but always includes them in group 0.
@@ -13,10 +13,11 @@ RUN mkdir -p /outfs/work /outfs/tmp \
   && chmod g+s /outfs/work /outfs/tmp
 
 FROM gcr.io/distroless/static:nonroot
-ARG TARGETARCH
-COPY linux/${TARGETARCH}/never /never
+ARG TARGETPLATFORM
+COPY ${TARGETPLATFORM}/never /never
 COPY --from=prep /outfs/work /work
-COPY --from=prep /outfs/tmp  /tmp
+COPY --from=prep /outfs/tmp /tmp
 ENV HOME=/tmp
 WORKDIR /work
+USER 65532:65532
 ENTRYPOINT ["/never"]
