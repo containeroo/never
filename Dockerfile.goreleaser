@@ -1,23 +1,28 @@
 # syntax=docker/dockerfile:1.25
 
 FROM --platform=$BUILDPLATFORM alpine:3.24 AS prep
-RUN mkdir -p /outfs/work /outfs/tmp \
-  # Change group ownership of /work and /tmp to GID 0 (root group),
-  # because OpenShift assigns containers a random UID but always includes them in group 0.
-  && chgrp -R 0 /outfs/work /outfs/tmp \
-  # Give group 0 read/write/execute (X only applies to dirs or already-executable files).
-  # This makes the dirs writable by arbitrary UIDs in group 0.
-  && chmod -R g+rwX /outfs/work /outfs/tmp \
-  # Set the setgid bit on the dirs so that any new files/dirs created inside
-  # will inherit group 0 instead of the creator's primary group.
-  && chmod g+s /outfs/work /outfs/tmp
 
+# Create writable runtime directories owned by the root group.
+# The setgid bit keeps new files/directories in group 0, which supports
+# OpenShift's arbitrary UID model while still running as a non-root user.
+RUN install -d -o 0 -g 0 -m 2775 /outfs/work /outfs/tmp
+
+# Use distroless as minimal base image to package the manager binary.
+# Refer to https://github.com/GoogleContainerTools/distroless for more details.
 FROM gcr.io/distroless/static:nonroot
+
 ARG TARGETPLATFORM
+
 COPY ${TARGETPLATFORM}/never /never
 COPY --from=prep /outfs/work /work
 COPY --from=prep /outfs/tmp /tmp
+
 ENV HOME=/tmp
 WORKDIR /work
-USER 65532:65532
+
+# Run as a non-root user by default.
+# Use GID 0 so the process can write to root-group-owned writable paths,
+# which keeps the image compatible with OpenShift's arbitrary UID model.
+USER 65532:0
+
 ENTRYPOINT ["/never"]

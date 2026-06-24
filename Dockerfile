@@ -1,51 +1,63 @@
-# Build the manager binary
-FROM golang:1.26 AS builder
+# syntax=docker/dockerfile:1.25
+
+# Build the manager binary.
+FROM golang:1.26 AS prep
+
 ARG TARGETOS
 ARG TARGETARCH
 ARG VERSION=dev
 ARG COMMIT=none
 ARG LDFLAGS="-s -w -X main.Version=${VERSION} -X main.Commit=${COMMIT}"
+
 ENV CGO_ENABLED=0
 
 WORKDIR /workspace
-# Copy the Go Modules manifests
+
+# Copy the Go module manifests first so dependency downloads can be cached.
 COPY go.mod go.mod
 COPY go.sum go.sum
-# cache deps before building and copying source so that we don't need to re-download as much
-# and so that source changes don't invalidate our downloaded layer
-RUN go mod download
 
-# Copy the go source
-COPY cmd/never/main.go cmd/never/main.go
-COPY internal/ internal
-COPY templates/ templates
+# Download modules before copying source files so source changes do not
+# invalidate the dependency cache layer.
+RUN --mount=type=cache,target=/go/pkg/mod \
+  go mod download
 
-# Build
-# the GOARCH has not a default value to allow the binary be built according to the host where the command
-# was called. For example, if we call make docker-build in a local env which has the Apple Silicon M1 SO
-# the docker BUILDPLATFORM arg will be linux/arm64 when for Apple x86 it will be linux/amd64. Therefore,
-# by leaving it empty we can ensure that the container and binary shipped on it will have the same platform.
-RUN GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} go build -ldflags="$LDFLAGS" -a -o never cmd/never/main.go
+# Copy the Go source and templates.
+COPY cmd/ cmd/
+COPY internal/ internal/
 
-RUN mkdir -p /outfs/work /outfs/tmp \
-  # Change group ownership of /work and /tmp to GID 0 (root group),
-  # because OpenShift assigns containers a random UID but always includes them in group 0.
-  && chgrp -R 0 /outfs/work /outfs/tmp \
-  # Give group 0 read/write/execute (X only applies to dirs or already-executable files).
-  # This makes the dirs writable by arbitrary UIDs in group 0.
-  && chmod -R g+rwX /outfs/work /outfs/tmp \
-  # Set the setgid bit on the dirs so that any new files/dirs created inside
-  # will inherit group 0 instead of the creator's primary group.
-  && chmod g+s /outfs/work /outfs/tmp
+# Build the binary.
+# TARGETARCH defaults to the builder architecture for regular Docker builds,
+# but can be set by buildx for cross-platform builds.
+RUN --mount=type=cache,target=/go/pkg/mod \
+  --mount=type=cache,target=/root/.cache/go-build \
+  GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH:-$(go env GOARCH)} \
+  go build \
+  -ldflags="$LDFLAGS" \
+  -a \
+  -o never \
+  cmd/never/main.go
 
+# Create writable runtime directories owned by the root group.
+# The setgid bit keeps new files/directories in group 0, which supports
+# OpenShift's arbitrary UID model while still running as a non-root user.
+RUN install -d -o 0 -g 0 -m 2775 /outfs/work /outfs/tmp
 
-# Use distroless as minimal base image to package the manager binary
-# Refer to https://github.com/GoogleContainerTools/distroless for more details
+# Use distroless as minimal base image to package the manager binary.
+# Refer to https://github.com/GoogleContainerTools/distroless for more details.
 FROM gcr.io/distroless/static:nonroot
-COPY --from=builder /outfs/work /work
-COPY --from=builder /outfs/tmp  /tmp
+
+COPY --from=prep /workspace/never /never
+COPY --from=prep /outfs/work /work
+COPY --from=prep /outfs/tmp /tmp
+
 ENV HOME=/tmp
 WORKDIR /work
-COPY --from=builder /workspace/never .
-USER 65532:65532
+
+# Run as a non-root user by default.
+# Use GID 0 so the process can write to root-group-owned writable paths,
+# which keeps the image compatible with OpenShift's arbitrary UID model.
+USER 65532:0
+
 ENTRYPOINT ["/never"]
+
