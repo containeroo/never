@@ -31,7 +31,7 @@ func Run(ctx context.Context, version string, args []string, stdOut, stdErr io.W
 	logger := logging.SetupLogger(cfg.LogFormat, stdOut)
 
 	// Initialize target checkers
-	checkers, err := factory.BuildCheckers(cfg.Targets, cfg.DefaultCheckInterval)
+	checkers, err := factory.BuildCheckers(cfg.Targets, cfg.DefaultCheckInterval, version)
 	if err != nil {
 		logger.Error("failed to initialize target checkers", "err", err)
 		return err

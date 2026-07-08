@@ -22,7 +22,9 @@ const version string = "0.0.0"
 func TestRunHTTPReady(t *testing.T) {
 	t.Parallel()
 
+	userAgent := make(chan string, 1)
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		userAgent <- r.Header.Get("User-Agent")
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer server.Close()
@@ -45,6 +47,7 @@ func TestRunHTTPReady(t *testing.T) {
 	last := len(stdOutEntries) - 1
 
 	assert.Contains(t, stdOutEntries[last], "HTTPServer is ready ✓")
+	assert.Equal(t, "never/"+version, <-userAgent)
 }
 
 // TestRunTCPReady verifies the expected behavior.

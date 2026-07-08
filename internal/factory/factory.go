@@ -14,6 +14,11 @@ import (
 	"github.com/containeroo/resolver"
 )
 
+const (
+	userAgentHeader = "User-Agent"
+	userAgentPrefix = "never/"
+)
+
 // TargetConfig describes one checker target after CLI parsing.
 type TargetConfig struct {
 	ID          string
@@ -50,7 +55,7 @@ type CheckerWithInterval struct {
 }
 
 // BuildCheckers creates a list of CheckerWithInterval from typed target configuration.
-func BuildCheckers(targets []TargetConfig, defaultInterval time.Duration) ([]CheckerWithInterval, error) {
+func BuildCheckers(targets []TargetConfig, defaultInterval time.Duration, version string) ([]CheckerWithInterval, error) {
 	checkers := make([]CheckerWithInterval, 0, len(targets))
 
 	for _, target := range targets {
@@ -75,6 +80,7 @@ func BuildCheckers(targets []TargetConfig, defaultInterval time.Duration) ([]Che
 			if err != nil {
 				return nil, fmt.Errorf("invalid \"--%s.%s.header\": %w", strings.ToLower(target.Type.String()), target.ID, err)
 			}
+			setDefaultUserAgent(headersMap, version)
 			opts = append(opts, checker.WithHTTPHeaders(headersMap))
 
 			if len(target.HTTPExpectedStatusCodes) > 0 {
@@ -130,6 +136,15 @@ func BuildCheckers(targets []TargetConfig, defaultInterval time.Duration) ([]Che
 	}
 
 	return checkers, nil
+}
+
+// setDefaultUserAgent adds the application user agent unless the target already configured one.
+func setDefaultUserAgent(headers http.Header, version string) {
+	if headers.Get(userAgentHeader) != "" {
+		return
+	}
+
+	headers.Set(userAgentHeader, userAgentPrefix+version)
 }
 
 // createHTTPHeadersMap creates an http.Header from a slice of key=value strings.

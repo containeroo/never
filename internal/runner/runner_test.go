@@ -56,7 +56,7 @@ func TestRunAllHTTPReady(t *testing.T) {
 	fs, err := cli.ParseFlags(args, version)
 	require.NoError(t, err)
 
-	checkers, err := factory.BuildCheckers(fs.Targets, fs.DefaultCheckInterval)
+	checkers, err := factory.BuildCheckers(fs.Targets, fs.DefaultCheckInterval, version)
 	require.NoError(t, err)
 
 	// Run
@@ -92,7 +92,7 @@ func TestRunAllTCPReady(t *testing.T) {
 	fs, err := cli.ParseFlags(args, version)
 	require.NoError(t, err)
 
-	checkers, err := factory.BuildCheckers(fs.Targets, fs.DefaultCheckInterval)
+	checkers, err := factory.BuildCheckers(fs.Targets, fs.DefaultCheckInterval, version)
 	require.NoError(t, err)
 
 	var output strings.Builder
@@ -136,7 +136,7 @@ func TestRunAllMultipleReady(t *testing.T) {
 	fs, err := cli.ParseFlags(args, version)
 	require.NoError(t, err)
 
-	checkers, err := factory.BuildCheckers(fs.Targets, fs.DefaultCheckInterval)
+	checkers, err := factory.BuildCheckers(fs.Targets, fs.DefaultCheckInterval, version)
 	require.NoError(t, err)
 
 	var output strings.Builder
@@ -184,7 +184,7 @@ func TestRunAllPropagatesError(t *testing.T) {
 	fs, err := cli.ParseFlags(args, version)
 	require.NoError(t, err)
 
-	checkers, err := factory.BuildCheckers(fs.Targets, fs.DefaultCheckInterval)
+	checkers, err := factory.BuildCheckers(fs.Targets, fs.DefaultCheckInterval, version)
 	require.NoError(t, err)
 
 	var output strings.Builder
@@ -214,7 +214,7 @@ func TestRunAllMaxAttempts(t *testing.T) {
 	fs, err := cli.ParseFlags(args, version)
 	require.NoError(t, err)
 
-	checkers, err := factory.BuildCheckers(fs.Targets, fs.DefaultCheckInterval)
+	checkers, err := factory.BuildCheckers(fs.Targets, fs.DefaultCheckInterval, version)
 	require.NoError(t, err)
 
 	var output strings.Builder

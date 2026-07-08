@@ -16,6 +16,7 @@ import (
 const (
 	targetID        = "mygroup"
 	testHTTPAddress = "http://example.com"
+	testVersion     = "0.0.0"
 )
 
 // TestBuildCheckers verifies the expected behavior.
@@ -40,7 +41,7 @@ func TestBuildCheckers(t *testing.T) {
 				HTTPSkipTLSVerify:         true,
 				HTTPTimeout:               33 * time.Second,
 			},
-		}, 9*time.Second)
+		}, 9*time.Second, testVersion)
 
 		require.NoError(t, err)
 		assert.Len(t, checkers, 1)
@@ -58,7 +59,7 @@ func TestBuildCheckers(t *testing.T) {
 				Type:    checker.CheckType("invalid"),
 				Address: "invalid-address",
 			},
-		}, 2*time.Second)
+		}, 2*time.Second, testVersion)
 
 		assert.Nil(t, checkers)
 		assert.EqualError(t, err, "unsupported check type: invalid")
@@ -75,7 +76,7 @@ func TestBuildCheckers(t *testing.T) {
 				HTTPMethod:  http.MethodGet,
 				HTTPHeaders: []string{"InvalidHeaderFormat"},
 			},
-		}, 2*time.Second)
+		}, 2*time.Second, testVersion)
 
 		require.Error(t, err)
 		assert.EqualError(t, err, "invalid \"--http.mygroup.header\": invalid header format: \"InvalidHeaderFormat\"")
@@ -94,7 +95,7 @@ func TestBuildCheckers(t *testing.T) {
 				HTTPMethod:              http.MethodGet,
 				HTTPExpectedStatusCodes: []string{"201-200"},
 			},
-		}, 2*time.Second)
+		}, 2*time.Second, testVersion)
 
 		require.Error(t, err)
 		assert.Len(t, checkers, 0)
@@ -111,7 +112,7 @@ func TestBuildCheckers(t *testing.T) {
 				HTTPMethod:              http.MethodGet,
 				HTTPExpectedStatusCodes: []string{"200,201"},
 			},
-		}, 2*time.Second)
+		}, 2*time.Second, testVersion)
 
 		require.NoError(t, err)
 		assert.Len(t, checkers, 1)
@@ -129,7 +130,7 @@ func TestBuildCheckers(t *testing.T) {
 				Backoff:     backoff.ModeExponential,
 				MaxInterval: 30 * time.Second,
 			},
-		}, 2*time.Second)
+		}, 2*time.Second, testVersion)
 
 		require.NoError(t, err)
 		require.Len(t, checkers, 1)
@@ -148,7 +149,7 @@ func TestBuildCheckers(t *testing.T) {
 				Address:    address,
 				TCPTimeout: 3 * time.Second,
 			},
-		}, 2*time.Second)
+		}, 2*time.Second, testVersion)
 
 		require.NoError(t, err)
 		assert.Len(t, checkers, 1)
@@ -167,7 +168,7 @@ func TestBuildCheckers(t *testing.T) {
 				ICMPReadTimeout:  2 * time.Second,
 				ICMPWriteTimeout: 2 * time.Second,
 			},
-		}, 2*time.Second)
+		}, 2*time.Second, testVersion)
 
 		require.NoError(t, err)
 		assert.Len(t, checkers, 1)
@@ -183,7 +184,7 @@ func TestBuildCheckers(t *testing.T) {
 				Type:    checker.ICMP,
 				Address: "://invalid-url",
 			},
-		}, 2*time.Second)
+		}, 2*time.Second, testVersion)
 
 		assert.Nil(t, checkers)
 		require.Error(t, err)
