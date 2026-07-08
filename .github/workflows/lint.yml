@@ -1,0 +1,51 @@
+---
+name: Lint
+
+on:
+  pull_request:
+    branches:
+      - master
+    paths:
+      - "cmd/**"
+      - "internal/**"
+      - go.mod
+      - go.sum
+      - Makefile
+      - ".golangci.yml"
+      - ".github/workflows/lint.yml"
+  push:
+    branches:
+      - master
+    paths:
+      - "cmd/**"
+      - "internal/**"
+      - go.mod
+      - go.sum
+      - Makefile
+      - ".golangci.yml"
+      - ".github/workflows/lint.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Run Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v7
+
+      - name: Determine Go version from go.mod
+        run: echo "GO_VERSION=$(grep "go 1." go.mod | cut -d " " -f 2)" >> "$GITHUB_ENV"
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v9
+        with:
+          version: v2.1.2
