@@ -5,6 +5,7 @@ import (
 	"context"
 	"net"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
@@ -19,20 +20,17 @@ const version string = "0.0.0"
 func TestRunHTTPReady(t *testing.T) {
 	t.Parallel()
 
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
 	args := []string{
 		"--http.httpcheck.name=HTTPServer",
-		"--http.httpcheck.address=http://localhost:8081",
+		"--http.httpcheck.address=" + server.URL,
 		"--http.httpcheck.interval=1s",
 		"--http.httpcheck.timeout=1s",
 	}
-
-	server := &http.Server{Addr: ":8081"}
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	})
-
-	go func() { _ = server.ListenAndServe() }()
-	defer server.Close() // nolint:errcheck
 
 	var stdOut, stdErr strings.Builder
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
@@ -50,16 +48,16 @@ func TestRunHTTPReady(t *testing.T) {
 func TestRunTCPReady(t *testing.T) {
 	t.Parallel()
 
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	defer listener.Close() // nolint:errcheck
+
 	args := []string{
 		"--tcp.tcptest.name=TCPServer",
-		"--tcp.tcptest.address=localhost:8082",
+		"--tcp.tcptest.address=" + listener.Addr().String(),
 		"--tcp.tcptest.interval=1s",
 		"--tcp.tcptest.timeout=1s",
 	}
-
-	listener, err := net.Listen("tcp", "localhost:8082")
-	require.NoError(t, err)
-	defer listener.Close() // nolint:errcheck
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()

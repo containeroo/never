@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
@@ -23,18 +24,14 @@ const version string = "0.0.0"
 func TestRunAllHTTPReady(t *testing.T) {
 	t.Parallel()
 
-	// Start a tiny HTTP server on a dedicated port.
-	mux := http.NewServeMux()
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-	})
-	server := &http.Server{Addr: ":18081", Handler: mux}
-	go func() { _ = server.ListenAndServe() }()
-	defer server.Close() // nolint:errcheck
+	}))
+	defer server.Close()
 
 	args := []string{
 		"--http.httpcheck.name=HTTPServer",
-		"--http.httpcheck.address=http://localhost:18081",
+		"--http.httpcheck.address=" + server.URL,
 		"--http.httpcheck.interval=1s",
 		"--http.httpcheck.timeout=1s",
 	}
@@ -65,14 +62,13 @@ func TestRunAllHTTPReady(t *testing.T) {
 func TestRunAllTCPReady(t *testing.T) {
 	t.Parallel()
 
-	// Start a TCP listener
-	ln, err := net.Listen("tcp", "localhost:18082")
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	require.NoError(t, err)
 	defer ln.Close() // nolint:errcheck
 
 	args := []string{
 		"--tcp.tcptest.name=TCPServer",
-		"--tcp.tcptest.address=localhost:18082",
+		"--tcp.tcptest.address=" + ln.Addr().String(),
 		"--tcp.tcptest.interval=1s",
 		"--tcp.tcptest.timeout=1s",
 	}
@@ -100,28 +96,23 @@ func TestRunAllTCPReady(t *testing.T) {
 func TestRunAllMultipleReady(t *testing.T) {
 	t.Parallel()
 
-	// HTTP server
-	mux := http.NewServeMux()
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	httpSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-	})
-	httpSrv := &http.Server{Addr: ":18085", Handler: mux}
-	go func() { _ = httpSrv.ListenAndServe() }()
-	defer httpSrv.Close() // nolint:errcheck
+	}))
+	defer httpSrv.Close()
 
-	// TCP listener
-	ln, err := net.Listen("tcp", "localhost:18086")
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	require.NoError(t, err)
 	defer ln.Close() // nolint:errcheck
 
 	args := []string{
 		"--http.httpcheck.name=HTTPServer",
-		"--http.httpcheck.address=http://localhost:18085",
+		"--http.httpcheck.address=" + httpSrv.URL,
 		"--http.httpcheck.interval=1s",
 		"--http.httpcheck.timeout=1s",
 
 		"--tcp.tcptest.name=TCPServer",
-		"--tcp.tcptest.address=localhost:18086",
+		"--tcp.tcptest.address=" + ln.Addr().String(),
 		"--tcp.tcptest.interval=1s",
 		"--tcp.tcptest.timeout=1s",
 	}
@@ -159,17 +150,15 @@ func TestRunAllNoCheckers(t *testing.T) {
 	err := RunAll(ctx, nil, -1, logger)
 	require.Error(t, err)
 	assert.True(t, errors.Is(err, ErrNoCheckers), "expected ErrNoCheckers, got %v", err)
-	// optional exact message assertion:
 	assert.EqualError(t, err, "no checkers to run")
 }
 
 func TestRunAllPropagatesError(t *testing.T) {
 	t.Parallel()
 
-	// Point to a non-existent HTTP server; set small timeouts.
 	args := []string{
 		"--http.httpcheck.name=HTTPServer",
-		"--http.httpcheck.address=http://localhost:19999",
+		"--http.httpcheck.address=http://" + unusedTCPAddr(t),
 		"--http.httpcheck.interval=100ms",
 		"--http.httpcheck.timeout=100ms",
 	}
@@ -198,7 +187,7 @@ func TestRunAllMaxAttempts(t *testing.T) {
 
 	args := []string{
 		"--http.httpcheck.name=HTTPServer",
-		"--http.httpcheck.address=http://localhost:19998",
+		"--http.httpcheck.address=http://" + unusedTCPAddr(t),
 		"--http.httpcheck.interval=50ms",
 		"--http.httpcheck.timeout=50ms",
 	}
@@ -218,4 +207,15 @@ func TestRunAllMaxAttempts(t *testing.T) {
 	err = RunAll(ctx, checkers, 2, logger)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "checker 'HTTPServer' failed")
+}
+
+func unusedTCPAddr(t *testing.T) string {
+	t.Helper()
+
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	addr := ln.Addr().String()
+	require.NoError(t, ln.Close())
+
+	return addr
 }

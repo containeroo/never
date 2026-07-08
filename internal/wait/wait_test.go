@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
@@ -17,16 +18,12 @@ import (
 func TestWaitUntilReady_ReadyHTTP(t *testing.T) {
 	t.Parallel()
 
-	server := &http.Server{Addr: ":9082"}
-	mux := http.NewServeMux()
-	mux.HandleFunc("/ready", func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-	})
-	server.Handler = mux
-	go func() { _ = server.ListenAndServe() }()
-	defer server.Close() // nolint:errcheck
+	}))
+	defer server.Close()
 
-	checker, err := checker.NewChecker(checker.HTTP, "HTTPServer", "http://localhost:9082/ready")
+	checker, err := checker.NewChecker(checker.HTTP, "HTTPServer", server.URL)
 	if err != nil {
 		t.Fatalf("Failed to create HTTPChecker: %v", err)
 	}
@@ -52,17 +49,13 @@ func TestWaitUntilReady_ReadyHTTP(t *testing.T) {
 func TestWaitUntilReady_HTTPFailsInitially(t *testing.T) {
 	t.Parallel()
 
-	server := &http.Server{Addr: ":9083"}
-	mux := http.NewServeMux()
-	mux.HandleFunc("/fail", func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		time.Sleep(500 * time.Millisecond) // Simulate a delayed start
 		w.WriteHeader(http.StatusOK)
-	})
-	server.Handler = mux
-	go func() { _ = server.ListenAndServe() }()
-	defer server.Close() // nolint:errcheck
+	}))
+	defer server.Close()
 
-	checker, err := checker.NewChecker(checker.HTTP, "HTTPServer", "http://localhost:9083/fail")
+	checker, err := checker.NewChecker(checker.HTTP, "HTTPServer", server.URL)
 	if err != nil {
 		t.Fatalf("Failed to create HTTPChecker: %v", err)
 	}
@@ -88,17 +81,13 @@ func TestWaitUntilReady_HTTPFailsInitially(t *testing.T) {
 func TestWaitUntilReady_HTTPContextCanceled(t *testing.T) {
 	t.Parallel()
 
-	server := &http.Server{Addr: ":9084"}
-	mux := http.NewServeMux()
-	mux.HandleFunc("/canceled", func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		time.Sleep(500 * time.Millisecond)
 		w.WriteHeader(http.StatusOK)
-	})
-	server.Handler = mux
-	go func() { _ = server.ListenAndServe() }()
-	defer server.Close() // nolint:errcheck
+	}))
+	defer server.Close()
 
-	checker, err := checker.NewChecker(checker.HTTP, "HTTPServer", "http://localhost:9084/canceled")
+	checker, err := checker.NewChecker(checker.HTTP, "HTTPServer", server.URL)
 	if err != nil {
 		t.Fatalf("Failed to create HTTPChecker: %v", err)
 	}
@@ -124,13 +113,13 @@ func TestWaitUntilReady_HTTPContextCanceled(t *testing.T) {
 func TestWaitUntilReady_ReadyTCP(t *testing.T) {
 	t.Parallel()
 
-	ln, err := net.Listen("tcp", "localhost:9085")
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatalf("Failed to create TCP server: %v", err)
 	}
 	defer ln.Close() // nolint:errcheck
 
-	checker, err := checker.NewChecker(checker.TCP, "TCPServer", "localhost:9085")
+	checker, err := checker.NewChecker(checker.TCP, "TCPServer", ln.Addr().String())
 	if err != nil {
 		t.Fatalf("Failed to create TCPChecker: %v", err)
 	}
@@ -156,11 +145,13 @@ func TestWaitUntilReady_ReadyTCP(t *testing.T) {
 func TestWaitUntilReady_TCPFailsInitially(t *testing.T) {
 	t.Parallel()
 
+	addr := unusedTCPAddr(t)
+
 	var ln net.Listener
 	go func() {
 		time.Sleep(500 * time.Millisecond) // Simulate a delayed server start
 		var err error
-		ln, err = net.Listen("tcp", "localhost:9086")
+		ln, err = net.Listen("tcp", addr)
 		if err != nil {
 			panic("Failed to start TCP server")
 		}
@@ -171,7 +162,7 @@ func TestWaitUntilReady_TCPFailsInitially(t *testing.T) {
 		}
 	}()
 
-	checker, err := checker.NewChecker(checker.TCP, "TCPServer", "localhost:9086")
+	checker, err := checker.NewChecker(checker.TCP, "TCPServer", addr)
 	if err != nil {
 		t.Fatalf("Failed to create TCPChecker: %v", err)
 	}
@@ -197,7 +188,7 @@ func TestWaitUntilReady_TCPFailsInitially(t *testing.T) {
 func TestWaitUntilReady_TCPContextCanceled(t *testing.T) {
 	t.Parallel()
 
-	checker, err := checker.NewChecker(checker.TCP, "TCPServer", "localhost:9087")
+	checker, err := checker.NewChecker(checker.TCP, "TCPServer", unusedTCPAddr(t))
 	if err != nil {
 		t.Fatalf("Failed to create TCPChecker: %v", err)
 	}
@@ -242,7 +233,7 @@ func TestNewStoppedTimer(t *testing.T) {
 func TestWaitUntilReady_MaxAttempts(t *testing.T) {
 	t.Parallel()
 
-	checker, err := checker.NewChecker(checker.TCP, "TCPServer", "localhost:59999")
+	checker, err := checker.NewChecker(checker.TCP, "TCPServer", unusedTCPAddr(t))
 	if err != nil {
 		t.Fatalf("Failed to create TCPChecker: %v", err)
 	}
@@ -260,4 +251,19 @@ func TestWaitUntilReady_MaxAttempts(t *testing.T) {
 	if !errors.Is(err, ErrMaxAttemptsExceeded) {
 		t.Fatalf("Expected ErrMaxAttemptsExceeded, got %v", err)
 	}
+}
+
+func unusedTCPAddr(t *testing.T) string {
+	t.Helper()
+
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("Failed to reserve TCP address: %v", err)
+	}
+	addr := ln.Addr().String()
+	if err := ln.Close(); err != nil {
+		t.Fatalf("Failed to release TCP address: %v", err)
+	}
+
+	return addr
 }

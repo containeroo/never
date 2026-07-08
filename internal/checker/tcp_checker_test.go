@@ -2,6 +2,7 @@ package checker
 
 import (
 	"context"
+	"errors"
 	"net"
 	"testing"
 	"time"
@@ -13,10 +14,8 @@ import (
 func TestNewTCPChecker_Valid(t *testing.T) {
 	t.Parallel()
 
-	ln, err := net.Listen("tcp", "127.0.0.1:7080")
-	if err != nil {
-		t.Fatalf("failed to start TCP server: %q", err)
-	}
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
 	defer ln.Close() // nolint:errcheck
 
 	checker, err := newTCPChecker("example", ln.Addr().String(), WithTCPTimeout(1*time.Second))
@@ -30,10 +29,8 @@ func TestNewTCPChecker_Valid(t *testing.T) {
 func TestTCPChecker_ValidConnection(t *testing.T) {
 	t.Parallel()
 
-	ln, err := net.Listen("tcp", "127.0.0.1:7081")
-	if err != nil {
-		t.Fatalf("failed to start TCP server: %q", err)
-	}
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
 	defer ln.Close() // nolint:errcheck
 
 	checker, err := newTCPChecker("example", ln.Addr().String(), WithTCPTimeout(1*time.Second))
@@ -47,14 +44,14 @@ func TestTCPChecker_ValidConnection(t *testing.T) {
 func TestTCPChecker_FailedConnection(t *testing.T) {
 	t.Parallel()
 
-	checker, err := newTCPChecker("example", "127.0.0.1:7090", WithTCPTimeout(1*time.Second))
+	checker, err := newTCPChecker("example", unusedTCPAddr(t), WithTCPTimeout(1*time.Second))
 	require.NoError(t, err)
 
 	ctx := context.Background()
 	err = checker.Check(ctx)
 
 	require.Error(t, err)
-	assert.EqualError(t, err, "dial tcp 127.0.0.1:7090: connect: connection refused")
+	assert.Contains(t, err.Error(), "connect: connection refused")
 }
 
 func TestTCPChecker_InvalidAddress(t *testing.T) {
@@ -73,17 +70,26 @@ func TestTCPChecker_InvalidAddress(t *testing.T) {
 func TestTCPChecker_Timeout(t *testing.T) {
 	t.Parallel()
 
-	ln, err := net.Listen("tcp", "127.0.0.1:7082")
-	defer ln.Close() // nolint:errcheck,staticcheck
+	checker, err := newTCPChecker("example", unusedTCPAddr(t), WithTCPTimeout(1*time.Second))
 	require.NoError(t, err)
 
-	// Simulate a timeout by setting an impossibly short timeout
-	checker, err := newTCPChecker("example", ln.Addr().String(), WithTCPTimeout(1*time.Nanosecond))
-	require.NoError(t, err)
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Nanosecond)
+	defer cancel()
+	time.Sleep(time.Millisecond)
 
-	ctx := context.Background()
 	err = checker.Check(ctx)
 
 	require.Error(t, err)
-	assert.EqualError(t, err, "dial tcp 127.0.0.1:7082: i/o timeout")
+	assert.True(t, errors.Is(err, context.DeadlineExceeded), "expected context deadline exceeded, got %v", err)
+}
+
+func unusedTCPAddr(t *testing.T) string {
+	t.Helper()
+
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	addr := ln.Addr().String()
+	require.NoError(t, ln.Close())
+
+	return addr
 }
