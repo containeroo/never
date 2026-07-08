@@ -35,8 +35,12 @@ Whether you're waiting on a `port`, `ping`, or a `200 OK`, `N.E.V.E.R.` backs do
 | -------------------- | -------- | ------- | ------------------------------------------------------------------- |
 | `--default-interval` | duration | `2s`    | Default interval between checks. Can be overridden for each target. |
 | `--max-attempts`     | int      | `-1`    | Maximum attempts before giving up. Use `-1` to retry endlessly.     |
+<<<<<<< HEAD
+| `--log-format`      | enum     | `text`  | Log output format: `text` or `json`.                               |
+=======
 | `--log-format`       | enum     | `text`  | Log output format: `text` or `json`.                                |
 | `--log-level`        | enum     | `info`  | Minimum log level: `debug`, `info`, `warn` or `error`.              |
+>>>>>>> 02e81ff (refactor: move CLI flags to internal/cli)
 | `--version`          | bool     | `false` | Show version and exit.                                              |
 | `--help`, `-h`       | bool     | `false` | Show help.                                                          |
 
@@ -60,6 +64,9 @@ Types are: `http`, `icmp` or `tcp`.
 
 - **`--http.<IDENTIFIER>.max-attempts`** = `int`
   Maximum attempts before giving up. Defaults to `--max-attempts` when unset or `0`.
+
+- **`--http.<IDENTIFIER>.method`** = `enum`
+  The HTTP method to use. Allowed values: `GET`, `HEAD`, `POST`, `PUT`, `PATCH`, `DELETE`, `CONNECT`, `OPTIONS`, `TRACE`. Defaults to `GET`.
 
 - **`--http.<IDENTIFIER>.backoff`** = `enum`
   Retry backoff mode. Allowed values: `none`, `exponential`. Defaults to `none`.
@@ -112,10 +119,17 @@ Types are: `http`, `icmp` or `tcp`.
   The timeout for ICMP read and write operations (e.g., `2s`). Defaults to `2s`.
 
 - **`--icmp.<IDENTIFIER>.read-timeout`** = `duration`
+  The read timeout for the ICMP connection (e.g., `1s`). Defaults to `2s`.
+
+- **`--icmp.<IDENTIFIER>.write-timeout`** = `duration`
+<<<<<<< HEAD
   Advanced override for the ICMP read timeout (e.g., `1s`). Defaults to `--icmp.<IDENTIFIER>.timeout` when unset or `0`.
 
 - **`--icmp.<IDENTIFIER>.write-timeout`** = `duration`
   Advanced override for the ICMP write timeout (e.g., `1s`). Defaults to `--icmp.<IDENTIFIER>.timeout` when unset or `0`.
+=======
+  The write timeout for the ICMP connection (e.g., `1s`). Defaults to `2s`.
+>>>>>>> cadd9b5 (docs: align README with current flags)
 
 #### TCP Flags
 
@@ -132,12 +146,15 @@ Types are: `http`, `icmp` or `tcp`.
 - **`--tcp.<IDENTIFIER>.max-attempts`** = `int`
   Maximum attempts before giving up. Defaults to `--max-attempts` when unset or `0`.
 
+<<<<<<< HEAD
 - **`--tcp.<IDENTIFIER>.backoff`** = `enum`
   Retry backoff mode. Allowed values: `none`, `exponential`. Defaults to `none`.
 
 - **`--tcp.<IDENTIFIER>.max-interval`** = `duration`
   Maximum retry interval when backoff increases the delay. Defaults to uncapped when unset or `0`.
 
+=======
+>>>>>>> cadd9b5 (docs: align README with current flags)
 - **`--tcp.<IDENTIFIER>.timeout`** = `duration`
   The timeout for the TCP connection attempt (e.g., `5s`). Defaults to `2s`.
 
@@ -241,9 +258,17 @@ Example:
 ```yaml
 - name: wait-for-host
   image: ghcr.io/containeroo/never:latest
+<<<<<<< HEAD
+  env:
+    - name: TARGET_ADDRESS
+      value: icmp://hostname.domain.com
   args:
     - --icmp.host.address=hostname.domain.com
     - --icmp.host.timeout=2s
+=======
+  args:
+    - --icmp.host.address=hostname.domain.com
+>>>>>>> cadd9b5 (docs: align README with current flags)
   securityContext:
     readOnlyRootFilesystem: true
     allowPrivilegeEscalation: false
