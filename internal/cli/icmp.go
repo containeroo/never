@@ -21,7 +21,7 @@ func registerICMPFlags(tf *tinyflags.FlagSet) {
 		Placeholder("N")
 	registerRetryFlags(icmp)
 	icmp.Duration("timeout", 2*time.Second, "Timeout for ICMP read and write").
-		Validate(validatePositiveDuration("timeout")).
+		Validate(validateTimeoutDuration()).
 		Placeholder("DURATION")
 	icmp.Duration("read-timeout", 0*time.Second, "Advanced: override the ICMP read timeout. Defaults to --icmp.<ID>.timeout when unset or 0.").
 		Validate(validateNonNegativeDuration("read-timeout")).

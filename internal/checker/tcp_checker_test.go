@@ -3,27 +3,27 @@ package checker
 import (
 	"context"
 	"errors"
-	"net"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/containeroo/never/internal/testutils"
 )
 
 // TestNewTCPChecker_Valid verifies the expected behavior.
 func TestNewTCPChecker_Valid(t *testing.T) {
 	t.Parallel()
 
-	ln, err := net.Listen("tcp", "127.0.0.1:0")
-	require.NoError(t, err)
-	defer ln.Close() // nolint:errcheck
+	listener := testutils.ListenLocalTCP(t)
+	defer listener.Close() // nolint:errcheck
 
-	checker, err := newTCPChecker("example", ln.Addr().String(), WithTCPTimeout(1*time.Second))
+	checker, err := newTCPChecker("example", listener.Addr().String(), WithTCPTimeout(1*time.Second))
 	require.NoError(t, err)
 
 	assert.Equal(t, checker.Name(), "example")
-	assert.Equal(t, checker.Address(), ln.Addr().String())
+	assert.Equal(t, checker.Address(), listener.Addr().String())
 	assert.Equal(t, checker.Type(), TCP.String())
 }
 
@@ -31,11 +31,10 @@ func TestNewTCPChecker_Valid(t *testing.T) {
 func TestTCPChecker_ValidConnection(t *testing.T) {
 	t.Parallel()
 
-	ln, err := net.Listen("tcp", "127.0.0.1:0")
-	require.NoError(t, err)
-	defer ln.Close() // nolint:errcheck
+	listener := testutils.ListenLocalTCP(t)
+	defer listener.Close() // nolint:errcheck
 
-	checker, err := newTCPChecker("example", ln.Addr().String(), WithTCPTimeout(1*time.Second))
+	checker, err := newTCPChecker("example", listener.Addr().String(), WithTCPTimeout(1*time.Second))
 	require.NoError(t, err)
 
 	ctx := context.Background()
@@ -47,7 +46,7 @@ func TestTCPChecker_ValidConnection(t *testing.T) {
 func TestTCPChecker_FailedConnection(t *testing.T) {
 	t.Parallel()
 
-	checker, err := newTCPChecker("example", unusedTCPAddr(t), WithTCPTimeout(1*time.Second))
+	checker, err := newTCPChecker("example", testutils.LocalTCPAddr(t), WithTCPTimeout(1*time.Second))
 	require.NoError(t, err)
 
 	ctx := context.Background()
@@ -75,7 +74,7 @@ func TestTCPChecker_InvalidAddress(t *testing.T) {
 func TestTCPChecker_Timeout(t *testing.T) {
 	t.Parallel()
 
-	checker, err := newTCPChecker("example", unusedTCPAddr(t), WithTCPTimeout(1*time.Second))
+	checker, err := newTCPChecker("example", testutils.LocalTCPAddr(t), WithTCPTimeout(1*time.Second))
 	require.NoError(t, err)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Nanosecond)
@@ -86,16 +85,4 @@ func TestTCPChecker_Timeout(t *testing.T) {
 
 	require.Error(t, err)
 	assert.True(t, errors.Is(err, context.DeadlineExceeded), "expected context deadline exceeded, got %v", err)
-}
-
-// unusedTCPAddr returns an unused local TCP address for tests.
-func unusedTCPAddr(t *testing.T) string {
-	t.Helper()
-
-	ln, err := net.Listen("tcp", "127.0.0.1:0")
-	require.NoError(t, err)
-	addr := ln.Addr().String()
-	require.NoError(t, ln.Close())
-
-	return addr
 }

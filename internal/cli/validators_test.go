@@ -6,6 +6,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/containeroo/never/internal/testutils"
 )
 
 // TestValidateHTTPAddress verifies HTTP address validation accepts supported inputs.
@@ -54,7 +56,7 @@ func TestValidateICMPAddress(t *testing.T) {
 
 	t.Run("IPv4", func(t *testing.T) {
 		t.Parallel()
-		assertNoValidationError(t, validateICMPAddress("127.0.0.1"))
+		assertNoValidationError(t, validateICMPAddress(testutils.LocalhostIPv4))
 	})
 
 	t.Run("IPv6", func(t *testing.T) {
@@ -114,7 +116,7 @@ func TestValidateTCPAddress(t *testing.T) {
 
 	t.Run("IPv4 with port", func(t *testing.T) {
 		t.Parallel()
-		assertNoValidationError(t, validateTCPAddress("127.0.0.1:80"))
+		assertNoValidationError(t, validateTCPAddress(testutils.LocalhostAddr("80")))
 	})
 
 	t.Run("hostname with port", func(t *testing.T) {
@@ -232,7 +234,7 @@ func TestValidateOptionalMaxAttempts(t *testing.T) {
 func TestValidatePositiveDuration(t *testing.T) {
 	t.Parallel()
 
-	validateTimeout := validatePositiveDuration("timeout")
+	validateTimeout := validateTimeoutDuration()
 
 	t.Run("positive", func(t *testing.T) {
 		t.Parallel()

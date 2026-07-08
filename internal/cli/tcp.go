@@ -14,7 +14,7 @@ func registerTCPFlags(tf *tinyflags.FlagSet) {
 		Validate(validateTCPAddress).
 		Required()
 	tcp.Duration("timeout", 2*time.Second, "Timeout for TCP connection").
-		Validate(validatePositiveDuration("timeout")).
+		Validate(validateTimeoutDuration()).
 		Placeholder("DURATION")
 	tcp.Duration("interval", 0*time.Second, "Time between TCP requests. Defaults to --default-interval when unset or 0.").
 		Validate(validateNonNegativeDuration("interval")).

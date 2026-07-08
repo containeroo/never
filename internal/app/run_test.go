@@ -3,7 +3,6 @@ package app
 import (
 	"bytes"
 	"context"
-	"net"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -12,6 +11,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/containeroo/never/internal/testutils"
 )
 
 // fake version for testing
@@ -50,8 +51,7 @@ func TestRunHTTPReady(t *testing.T) {
 func TestRunTCPReady(t *testing.T) {
 	t.Parallel()
 
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	require.NoError(t, err)
+	listener := testutils.ListenLocalTCP(t)
 	defer listener.Close() // nolint:errcheck
 
 	args := []string{
@@ -66,7 +66,7 @@ func TestRunTCPReady(t *testing.T) {
 
 	var stdOut, stdErr strings.Builder
 
-	err = Run(ctx, version, args, &stdOut, &stdErr)
+	err := Run(ctx, version, args, &stdOut, &stdErr)
 	require.NoError(t, err)
 
 	stdOutEntries := strings.Split(strings.TrimSpace(stdOut.String()), "\n")

@@ -10,6 +10,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const (
+	httpExampleURL     = "http://example.com"
+	httpWebAddressFlag = "--http.web.address=" + httpExampleURL
+)
+
 // TestParseFlagsHTTPMethod verifies HTTP method parsing uses enum validation.
 func TestParseFlagsHTTPMethod(t *testing.T) {
 	t.Parallel()
@@ -18,7 +23,7 @@ func TestParseFlagsHTTPMethod(t *testing.T) {
 		t.Parallel()
 
 		parsedFlags, err := ParseFlags([]string{
-			"--http.web.address=http://example.com",
+			httpWebAddressFlag,
 			"--http.web.method=POST",
 		}, "1.0.0")
 		require.NoError(t, err)
@@ -30,7 +35,7 @@ func TestParseFlagsHTTPMethod(t *testing.T) {
 		t.Parallel()
 
 		_, err := ParseFlags([]string{
-			"--http.web.address=http://example.com",
+			httpWebAddressFlag,
 			"--http.web.method=INVALID",
 		}, "1.0.0")
 		assertInvalidFlagValueError(t, err, "--http.web.method", "INVALID", http.MethodGet, http.MethodPost)
@@ -44,7 +49,7 @@ func TestParseFlagsHTTPTarget(t *testing.T) {
 	args := []string{
 		"--default-interval=5s",
 		"--http.web.name=Web",
-		"--http.web.address=http://example.com",
+		httpWebAddressFlag,
 		"--http.web.method=POST",
 		"--http.web.header=Authorization=Bearer token",
 		"--http.web.expected-status-codes=200,204",
@@ -60,7 +65,7 @@ func TestParseFlagsHTTPTarget(t *testing.T) {
 	target := parsedFlags.Targets[0]
 	assert.Equal(t, "web", target.ID)
 	assert.Equal(t, "Web", target.Name)
-	assert.Equal(t, "http://example.com", target.Address)
+	assert.Equal(t, httpExampleURL, target.Address)
 	assert.Equal(t, http.MethodPost, target.HTTPMethod)
 	assert.Equal(t, []string{"Authorization=Bearer token"}, target.HTTPHeaders)
 	assert.Equal(t, []string{"200", "204"}, target.HTTPExpectedStatusCodes)
@@ -77,7 +82,7 @@ func TestParseFlagsHTTPBackoff(t *testing.T) {
 		t.Parallel()
 
 		_, err := ParseFlags([]string{
-			"--http.web.address=http://example.com",
+			httpWebAddressFlag,
 			"--http.web.backoff=exponential",
 			"--http.web.max-interval=30s",
 		}, "1.0.0")
@@ -88,7 +93,7 @@ func TestParseFlagsHTTPBackoff(t *testing.T) {
 		t.Parallel()
 
 		_, err := ParseFlags([]string{
-			"--http.web.address=http://example.com",
+			httpWebAddressFlag,
 			"--http.web.backoff=invalid",
 		}, "1.0.0")
 		assertInvalidFlagValueError(t, err, "--http.web.backoff", "invalid", backoff.ModeLinear.String(), backoff.ModeExponential.String())
@@ -101,7 +106,7 @@ func TestParseFlagsHTTPPerTargetMaxAttempts(t *testing.T) {
 
 	parsedFlags, err := ParseFlags([]string{
 		"--max-attempts=5",
-		"--http.web.address=http://example.com",
+		httpWebAddressFlag,
 		"--http.web.max-attempts=2",
 	}, "1.0.0")
 	require.NoError(t, err)

@@ -71,7 +71,7 @@ func validateTCPAddress(s string) error {
 
 // validateHTTPStatusCodes validates a single status code value or range expression.
 func validateHTTPStatusCodes(codes string) error {
-	for _, code := range strings.Split(codes, ",") {
+	for code := range strings.SplitSeq(codes, ",") {
 		_, err := httputils.ParseStatusCodes(code)
 		if err != nil {
 			return fmt.Errorf("invalid status code: %w", err)
@@ -102,11 +102,11 @@ func validateOptionalMaxAttempts(v int) error {
 	return validateMaxAttempts(v)
 }
 
-// validatePositiveDuration returns a validator that requires a duration greater than zero.
-func validatePositiveDuration(name string) func(time.Duration) error {
+// validateTimeoutDuration validates a timeout flag.
+func validateTimeoutDuration() func(time.Duration) error {
 	return func(d time.Duration) error {
 		if d <= 0 {
-			return fmt.Errorf("%s must be positive", name)
+			return errors.New("timeout must be positive")
 		}
 
 		return nil

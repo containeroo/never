@@ -12,6 +12,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/containeroo/never/internal/testutils"
+
 	"golang.org/x/net/icmp"
 	"golang.org/x/net/ipv4"
 	"golang.org/x/net/ipv6"
@@ -100,7 +102,7 @@ func TestICMPv4_Network(t *testing.T) {
 		t.Parallel()
 
 		protocol := &ICMPv4{}
-		assert.Equal(t, protocol.Network(), "ip4:icmp")
+		assert.Equal(t, protocol.Network(), icmpv4Network)
 	})
 }
 
@@ -221,7 +223,7 @@ func TestICMPv4_ListenPacket(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 		defer cancel()
 
-		conn, err := protocol.ListenPacket(ctx, "ip4:icmp", "localhost")
+		conn, err := protocol.ListenPacket(ctx, icmpv4Network, testutils.LocalhostIPv4)
 		if err != nil {
 			// If we don't have raw-socket privilege, skip instead of failing.
 			if isPermissionError(t, err) {
@@ -243,7 +245,7 @@ func TestICMPv4_ListenPacket(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 		defer cancel()
 
-		_, err := protocol.ListenPacket(ctx, "invalid-network", "localhost")
+		_, err := protocol.ListenPacket(ctx, "invalid-network", testutils.LocalhostIPv4)
 		require.Error(t, err)
 		assert.EqualError(t, err, "failed to listen for ICMP packets: listen invalid-network: unknown network invalid-network")
 	})
@@ -256,12 +258,12 @@ func TestICMPv4_ListenPacket(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 		defer cancel()
 
-		_, err := protocol.ListenPacket(ctx, "ip4:icmp", "invalid-address")
+		_, err := protocol.ListenPacket(ctx, icmpv4Network, "invalid-address")
 
 		require.Error(t, err)
 
 		// Check your wrapper/prefix is present (stable across platforms)
-		assert.Contains(t, err.Error(), "failed to listen for ICMP packets: listen ip4:icmp:")
+		assert.Contains(t, err.Error(), "failed to listen for ICMP packets: listen "+icmpv4Network+":")
 
 		// Unwrap the root cause: accept NXDOMAIN (IsNotFound) or SERVFAIL (IsTemporary)
 		var dnsErr *net.DNSError
@@ -296,7 +298,7 @@ func TestICMPv6_Network(t *testing.T) {
 		t.Parallel()
 
 		protocol := &ICMPv6{}
-		assert.Equal(t, protocol.Network(), "ip6:ipv6-icmp")
+		assert.Equal(t, protocol.Network(), icmpv6Network)
 	})
 }
 
@@ -419,7 +421,7 @@ func TestICMPv6_ListenPacket(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 		defer cancel()
 
-		conn, err := protocol.ListenPacket(ctx, "ip6:ipv6-icmp", "localhost")
+		conn, err := protocol.ListenPacket(ctx, icmpv6Network, testutils.LocalhostIPv6)
 		if err != nil {
 			// If we don't have raw-socket privilege, skip instead of failing.
 			if isPermissionError(t, err) {
@@ -441,7 +443,7 @@ func TestICMPv6_ListenPacket(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 		defer cancel()
 
-		_, err := protocol.ListenPacket(ctx, "invalid-network", "localhost")
+		_, err := protocol.ListenPacket(ctx, "invalid-network", testutils.LocalhostIPv4)
 
 		require.Error(t, err)
 		assert.EqualError(t, err, "failed to listen for ICMP packets: listen invalid-network: unknown network invalid-network")
@@ -455,12 +457,12 @@ func TestICMPv6_ListenPacket(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 		defer cancel()
 
-		_, err := protocol.ListenPacket(ctx, "ip6:ipv6-icmp", "invalid-address")
+		_, err := protocol.ListenPacket(ctx, icmpv6Network, "invalid-address")
 
 		require.Error(t, err)
 
 		// Check your wrapper/prefix is present (stable across platforms)
-		assert.Contains(t, err.Error(), "failed to listen for ICMP packets: listen ip6:ipv6-icmp:")
+		assert.Contains(t, err.Error(), "failed to listen for ICMP packets: listen "+icmpv6Network+":")
 
 		// Unwrap the root cause: accept NXDOMAIN (IsNotFound) or SERVFAIL (IsTemporary)
 		var dnsErr *net.DNSError

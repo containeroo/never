@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"net"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -14,12 +13,28 @@ import (
 	"github.com/containeroo/never/internal/cli"
 	"github.com/containeroo/never/internal/factory"
 	"github.com/containeroo/never/internal/logging"
+	"github.com/containeroo/never/internal/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 // fake version for testing
 const version string = "0.0.0"
+
+const (
+	httpServerNameFlag     = "--http.httpcheck.name=HTTPServer"
+	httpServerIntervalFlag = "--http.httpcheck.interval=1s"
+	httpServerTimeoutFlag  = "--http.httpcheck.timeout=1s"
+	httpServerReadyLog     = "HTTPServer is ready ✓"
+	tcpServerNameFlag      = "--tcp.tcptest.name=TCPServer"
+	tcpServerIntervalFlag  = "--tcp.tcptest.interval=1s"
+	tcpServerTimeoutFlag   = "--tcp.tcptest.timeout=1s"
+	tcpServerReadyLog      = "TCPServer is ready ✓"
+)
+
+func httpAddressFlag(address string) string { return "--http.httpcheck.address=" + address }
+
+func tcpAddressFlag(address string) string { return "--tcp.tcptest.address=" + address }
 
 // TestRunAllHTTPReady verifies RunAll succeeds when an HTTP target is ready.
 func TestRunAllHTTPReady(t *testing.T) {
@@ -31,10 +46,10 @@ func TestRunAllHTTPReady(t *testing.T) {
 	defer server.Close()
 
 	args := []string{
-		"--http.httpcheck.name=HTTPServer",
-		"--http.httpcheck.address=" + server.URL,
-		"--http.httpcheck.interval=1s",
-		"--http.httpcheck.timeout=1s",
+		httpServerNameFlag,
+		httpAddressFlag(server.URL),
+		httpServerIntervalFlag,
+		httpServerTimeoutFlag,
 	}
 
 	// Build checkers via flags+factory (same path app would use).
@@ -57,22 +72,21 @@ func TestRunAllHTTPReady(t *testing.T) {
 	// Assert output contains readiness line
 	lines := strings.Split(strings.TrimSpace(output.String()), "\n")
 	require.NotEmpty(t, lines)
-	assert.Contains(t, lines[len(lines)-1], "HTTPServer is ready ✓")
+	assert.Contains(t, lines[len(lines)-1], httpServerReadyLog)
 }
 
 // TestRunAllTCPReady verifies RunAll succeeds when a TCP target is ready.
 func TestRunAllTCPReady(t *testing.T) {
 	t.Parallel()
 
-	ln, err := net.Listen("tcp", "127.0.0.1:0")
-	require.NoError(t, err)
-	defer ln.Close() // nolint:errcheck
+	listener := testutils.ListenLocalTCP(t)
+	defer listener.Close() // nolint:errcheck
 
 	args := []string{
-		"--tcp.tcptest.name=TCPServer",
-		"--tcp.tcptest.address=" + ln.Addr().String(),
-		"--tcp.tcptest.interval=1s",
-		"--tcp.tcptest.timeout=1s",
+		tcpServerNameFlag,
+		tcpAddressFlag(listener.Addr().String()),
+		tcpServerIntervalFlag,
+		tcpServerTimeoutFlag,
 	}
 
 	fs, err := cli.ParseFlags(args, version)
@@ -92,7 +106,7 @@ func TestRunAllTCPReady(t *testing.T) {
 
 	lines := strings.Split(strings.TrimSpace(output.String()), "\n")
 	require.NotEmpty(t, lines)
-	assert.Contains(t, lines[len(lines)-1], "TCPServer is ready ✓")
+	assert.Contains(t, lines[len(lines)-1], tcpServerReadyLog)
 }
 
 // TestRunAllMultipleReady verifies RunAll handles multiple ready targets.
@@ -104,20 +118,19 @@ func TestRunAllMultipleReady(t *testing.T) {
 	}))
 	defer httpSrv.Close()
 
-	ln, err := net.Listen("tcp", "127.0.0.1:0")
-	require.NoError(t, err)
-	defer ln.Close() // nolint:errcheck
+	listener := testutils.ListenLocalTCP(t)
+	defer listener.Close() // nolint:errcheck
 
 	args := []string{
-		"--http.httpcheck.name=HTTPServer",
-		"--http.httpcheck.address=" + httpSrv.URL,
-		"--http.httpcheck.interval=1s",
-		"--http.httpcheck.timeout=1s",
+		httpServerNameFlag,
+		httpAddressFlag(httpSrv.URL),
+		httpServerIntervalFlag,
+		httpServerTimeoutFlag,
 
-		"--tcp.tcptest.name=TCPServer",
-		"--tcp.tcptest.address=" + ln.Addr().String(),
-		"--tcp.tcptest.interval=1s",
-		"--tcp.tcptest.timeout=1s",
+		tcpServerNameFlag,
+		tcpAddressFlag(listener.Addr().String()),
+		tcpServerIntervalFlag,
+		tcpServerTimeoutFlag,
 	}
 
 	fs, err := cli.ParseFlags(args, version)
@@ -137,8 +150,8 @@ func TestRunAllMultipleReady(t *testing.T) {
 
 	// Order is nondeterministic; assert both readiness messages appear.
 	out := output.String()
-	assert.Contains(t, out, "HTTPServer is ready ✓")
-	assert.Contains(t, out, "TCPServer is ready ✓")
+	assert.Contains(t, out, httpServerReadyLog)
+	assert.Contains(t, out, tcpServerReadyLog)
 }
 
 // TestRunAllNoCheckers verifies RunAll rejects an empty checker list.
@@ -162,8 +175,8 @@ func TestRunAllPropagatesError(t *testing.T) {
 	t.Parallel()
 
 	args := []string{
-		"--http.httpcheck.name=HTTPServer",
-		"--http.httpcheck.address=http://" + unusedTCPAddr(t),
+		httpServerNameFlag,
+		httpAddressFlag(testutils.LocalHTTPURL(t)),
 		"--http.httpcheck.interval=100ms",
 		"--http.httpcheck.timeout=100ms",
 	}
@@ -192,8 +205,8 @@ func TestRunAllMaxAttempts(t *testing.T) {
 	t.Parallel()
 
 	args := []string{
-		"--http.httpcheck.name=HTTPServer",
-		"--http.httpcheck.address=http://" + unusedTCPAddr(t),
+		httpServerNameFlag,
+		httpAddressFlag(testutils.LocalHTTPURL(t)),
 		"--http.httpcheck.interval=50ms",
 		"--http.httpcheck.timeout=50ms",
 	}
@@ -213,16 +226,4 @@ func TestRunAllMaxAttempts(t *testing.T) {
 	err = RunAll(ctx, checkers, 2, logger)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "checker 'HTTPServer' failed")
-}
-
-// unusedTCPAddr returns an unused local TCP address for tests.
-func unusedTCPAddr(t *testing.T) string {
-	t.Helper()
-
-	ln, err := net.Listen("tcp", "127.0.0.1:0")
-	require.NoError(t, err)
-	addr := ln.Addr().String()
-	require.NoError(t, ln.Close())
-
-	return addr
 }

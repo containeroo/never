@@ -11,8 +11,10 @@ import (
 )
 
 const (
-	icmpv4ProtocolNumber int = 1
-	icmpv6ProtocolNumber int = 58
+	icmpv4ProtocolNumber int    = 1
+	icmpv6ProtocolNumber int    = 58
+	icmpv4Network        string = "ip4:icmp"
+	icmpv6Network        string = "ip6:ipv6-icmp"
 )
 
 // Protocol defines an interface for ICMP-based diagnostics, abstracting ICMPv4 and ICMPv6 behavior.
@@ -91,7 +93,7 @@ func (p *ICMPv4) ValidateReply(reply []byte, identifier, sequence uint16) error 
 }
 
 // Network returns the network type for the ICMP protocol.
-func (p *ICMPv4) Network() string { return "ip4:icmp" }
+func (p *ICMPv4) Network() string { return icmpv4Network }
 
 // ListenPacket creates a new ICMPv4 packet connection.
 func (p *ICMPv4) ListenPacket(ctx context.Context, network, address string) (net.PacketConn, error) {
@@ -145,7 +147,7 @@ func (p *ICMPv6) ValidateReply(reply []byte, identifier, sequence uint16) error 
 }
 
 // Network returns the network type for the ICMP protocol.
-func (p *ICMPv6) Network() string { return "ip6:ipv6-icmp" }
+func (p *ICMPv6) Network() string { return icmpv6Network }
 
 // ListenPacket creates a new ICMPv6 packet connection.
 func (p *ICMPv6) ListenPacket(ctx context.Context, network, address string) (net.PacketConn, error) {

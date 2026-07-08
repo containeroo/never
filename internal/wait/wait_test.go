@@ -12,6 +12,12 @@ import (
 	"time"
 
 	"github.com/containeroo/never/internal/checker"
+	"github.com/containeroo/never/internal/testutils"
+)
+
+const (
+	httpServerName = "HTTPServer"
+	tcpServerName  = "TCPServer"
 )
 
 // TestWaitUntilReady_ReadyHTTP ensures WaitUntilReady returns success when the HTTP target is ready.
@@ -23,7 +29,7 @@ func TestWaitUntilReady_ReadyHTTP(t *testing.T) {
 	}))
 	defer server.Close()
 
-	checker, err := checker.NewChecker(checker.HTTP, "HTTPServer", server.URL)
+	checker, err := checker.NewChecker(checker.HTTP, httpServerName, server.URL)
 	if err != nil {
 		t.Fatalf("Failed to create HTTPChecker: %v", err)
 	}
@@ -55,7 +61,7 @@ func TestWaitUntilReady_HTTPFailsInitially(t *testing.T) {
 	}))
 	defer server.Close()
 
-	checker, err := checker.NewChecker(checker.HTTP, "HTTPServer", server.URL)
+	checker, err := checker.NewChecker(checker.HTTP, httpServerName, server.URL)
 	if err != nil {
 		t.Fatalf("Failed to create HTTPChecker: %v", err)
 	}
@@ -87,7 +93,7 @@ func TestWaitUntilReady_HTTPContextCanceled(t *testing.T) {
 	}))
 	defer server.Close()
 
-	checker, err := checker.NewChecker(checker.HTTP, "HTTPServer", server.URL)
+	checker, err := checker.NewChecker(checker.HTTP, httpServerName, server.URL)
 	if err != nil {
 		t.Fatalf("Failed to create HTTPChecker: %v", err)
 	}
@@ -113,13 +119,10 @@ func TestWaitUntilReady_HTTPContextCanceled(t *testing.T) {
 func TestWaitUntilReady_ReadyTCP(t *testing.T) {
 	t.Parallel()
 
-	ln, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatalf("Failed to create TCP server: %v", err)
-	}
-	defer ln.Close() // nolint:errcheck
+	listener := testutils.ListenLocalTCP(t)
+	defer listener.Close() // nolint:errcheck
 
-	checker, err := checker.NewChecker(checker.TCP, "TCPServer", ln.Addr().String())
+	checker, err := checker.NewChecker(checker.TCP, tcpServerName, listener.Addr().String())
 	if err != nil {
 		t.Fatalf("Failed to create TCPChecker: %v", err)
 	}
@@ -145,24 +148,24 @@ func TestWaitUntilReady_ReadyTCP(t *testing.T) {
 func TestWaitUntilReady_TCPFailsInitially(t *testing.T) {
 	t.Parallel()
 
-	addr := unusedTCPAddr(t)
+	addr := testutils.LocalTCPAddr(t)
 
-	var ln net.Listener
+	var listener net.Listener
 	go func() {
 		time.Sleep(500 * time.Millisecond) // Simulate a delayed server start
 		var err error
-		ln, err = net.Listen("tcp", addr)
+		listener, err = net.Listen("tcp", addr)
 		if err != nil {
 			panic("Failed to start TCP server")
 		}
 	}()
 	defer func() {
-		if ln != nil {
-			ln.Close() // nolint:errcheck
+		if listener != nil {
+			listener.Close() // nolint:errcheck
 		}
 	}()
 
-	checker, err := checker.NewChecker(checker.TCP, "TCPServer", addr)
+	checker, err := checker.NewChecker(checker.TCP, tcpServerName, addr)
 	if err != nil {
 		t.Fatalf("Failed to create TCPChecker: %v", err)
 	}
@@ -188,7 +191,7 @@ func TestWaitUntilReady_TCPFailsInitially(t *testing.T) {
 func TestWaitUntilReady_TCPContextCanceled(t *testing.T) {
 	t.Parallel()
 
-	checker, err := checker.NewChecker(checker.TCP, "TCPServer", unusedTCPAddr(t))
+	checker, err := checker.NewChecker(checker.TCP, tcpServerName, testutils.LocalTCPAddr(t))
 	if err != nil {
 		t.Fatalf("Failed to create TCPChecker: %v", err)
 	}
@@ -235,7 +238,7 @@ func TestNewStoppedTimer(t *testing.T) {
 func TestWaitUntilReady_MaxAttempts(t *testing.T) {
 	t.Parallel()
 
-	checker, err := checker.NewChecker(checker.TCP, "TCPServer", unusedTCPAddr(t))
+	checker, err := checker.NewChecker(checker.TCP, tcpServerName, testutils.LocalTCPAddr(t))
 	if err != nil {
 		t.Fatalf("Failed to create TCPChecker: %v", err)
 	}
@@ -253,22 +256,6 @@ func TestWaitUntilReady_MaxAttempts(t *testing.T) {
 	if !errors.Is(err, ErrMaxAttemptsExceeded) {
 		t.Fatalf("Expected ErrMaxAttemptsExceeded, got %v", err)
 	}
-}
-
-// unusedTCPAddr returns an unused local TCP address for tests.
-func unusedTCPAddr(t *testing.T) string {
-	t.Helper()
-
-	ln, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatalf("Failed to reserve TCP address: %v", err)
-	}
-	addr := ln.Addr().String()
-	if err := ln.Close(); err != nil {
-		t.Fatalf("Failed to release TCP address: %v", err)
-	}
-
-	return addr
 }
 
 // TestWaitUntilReady_ContextCanceledDuringCheckStopsGracefully verifies the expected behavior.
@@ -301,4 +288,4 @@ func (c staticErrorChecker) Name() string { return "CanceledServer" }
 func (c staticErrorChecker) Type() string { return "TCP" }
 
 // Address returns the checker address.
-func (c staticErrorChecker) Address() string { return "127.0.0.1:1" }
+func (c staticErrorChecker) Address() string { return testutils.LocalhostAddr("1") }

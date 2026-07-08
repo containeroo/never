@@ -47,6 +47,6 @@ func registerHTTPFlags(tf *tinyflags.FlagSet) {
 
 	httpGroup.Bool("skip-tls-verify", defaultHTTPSkipTLSVerify, "Skip TLS verification")
 	httpGroup.Duration("timeout", 2*time.Second, "Request timeout").
-		Validate(validatePositiveDuration("timeout")).
+		Validate(validateTimeoutDuration()).
 		Placeholder("DURATION")
 }
