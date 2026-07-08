@@ -1,6 +1,6 @@
 # N.E.V.E.R. - Network Endpoint Validation with Endless Retries
 
-[![Go Doc](https://img.shields.io/badge/godoc-reference-blue.svg?style=flat-square)](https://godoc.org/github.com/containeroo/never)
+[![Go Reference](https://pkg.go.dev/badge/github.com/containeroo/never.svg)](https://pkg.go.dev/github.com/containeroo/never)
 [![Release](https://img.shields.io/github/release/containeroo/never.svg?style=flat-square)](https://github.com/containeroo/never/releases/latest)
 [![GitHub tag](https://img.shields.io/github/tag/containeroo/never.svg?style=flat-square)](https://github.com/containeroo/never/releases/latest)
 [![Unit Tests](https://github.com/containeroo/never/actions/workflows/tests.yml/badge.svg?branch=master)](https://github.com/containeroo/never/actions/workflows/tests.yml)
