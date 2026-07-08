@@ -8,6 +8,7 @@ import (
 
 	"github.com/containeroo/never/internal/backoff"
 	"github.com/containeroo/never/internal/checker"
+	"github.com/containeroo/never/internal/utils"
 
 	"github.com/containeroo/httputils"
 	"github.com/containeroo/resolver"
@@ -58,20 +59,9 @@ func BuildCheckers(targets []TargetConfig, defaultInterval time.Duration) ([]Che
 			return nil, fmt.Errorf("invalid variable in address: %w", err)
 		}
 
-		interval := defaultInterval
-		if target.Interval != 0 {
-			interval = target.Interval
-		}
-
-		backoffMode := target.Backoff
-		if backoffMode == "" {
-			backoffMode = backoff.ModeLinear
-		}
-
-		name := target.Name
-		if name == "" {
-			name = target.ID
-		}
+		interval := utils.DefaultIfZero(target.Interval, defaultInterval)
+		backoffMode := utils.DefaultIfZero(target.Backoff, backoff.ModeLinear)
+		name := utils.DefaultIfZero(target.Name, target.ID)
 
 		var opts []checker.Option
 
