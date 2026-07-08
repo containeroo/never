@@ -5,44 +5,36 @@ import (
 	"time"
 
 	"github.com/containeroo/never/internal/backoff"
+	"github.com/containeroo/never/internal/checker"
 	"github.com/containeroo/never/internal/factory"
-	"github.com/containeroo/tinyflags"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
+// TestBuildCheckers verifies the expected behavior.
 func TestBuildCheckers(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Valid HTTP Checker", func(t *testing.T) {
 		t.Parallel()
 
-		tf := tinyflags.NewFlagSet("test.exe", tinyflags.ContinueOnError)
-		http := tf.DynamicGroup("http")
-		http.String("name", "", "Name of the HTTP checker")
-		http.String("method", "GET", "HTTP method to use")
-		http.String("address", "", "HTTP target URL")
-		http.Duration("interval", 1*time.Second, "Time between HTTP requests. Can be overwritten with --default-interval.")
-		http.StringSlice("header", nil, "HTTP headers to send")
-		http.Bool("allow-duplicate-headers", true, "Allow duplicate HTTP headers")
-		http.StringSlice("expected-status-codes", []string{"200"}, "Expected HTTP status codes")
-		http.Bool("skip-tls-verify", true, "Skip TLS verification")
-		http.Duration("timeout", 22*time.Second, "Timeout in seconds")
-		http.Int("max-attempts", 0, "Max attempts")
+		checkers, err := factory.BuildCheckers([]factory.TargetConfig{
+			{
+				ID:                        "mygroup",
+				Type:                      checker.HTTP,
+				Name:                      "mygroup",
+				Address:                   "http://example.com",
+				Interval:                  5 * time.Second,
+				MaxAttempts:               3,
+				HTTPMethod:                "GET",
+				HTTPHeaders:               []string{"Content-Type=application/json"},
+				HTTPAllowDuplicateHeaders: true,
+				HTTPExpectedStatusCodes:   []string{"200"},
+				HTTPSkipTLSVerify:         true,
+				HTTPTimeout:               33 * time.Second,
+			},
+		}, 9*time.Second)
 
-		args := []string{
-			"--http.mygroup.address=http://example.com",
-			"--http.mygroup.method=GET",
-			"--http.mygroup.interval=5s",
-			"--http.mygroup.header=Content-Type=application/json",
-			"--http.mygroup.skip-tls-verify=true",
-			"--http.mygroup.timeout=33s",
-			"--http.mygroup.max-attempts=3",
-		}
-		err := tf.Parse(args)
-		require.NoError(t, err)
-
-		checkers, err := factory.BuildCheckers(tf.DynamicGroups(), 9*time.Second)
 		require.NoError(t, err)
 		assert.Len(t, checkers, 1)
 		assert.Equal(t, "http://example.com", checkers[0].Checker.Address())
@@ -53,15 +45,14 @@ func TestBuildCheckers(t *testing.T) {
 	t.Run("Invalid Check Type", func(t *testing.T) {
 		t.Parallel()
 
-		tf := tinyflags.NewFlagSet("test.exe", tinyflags.ContinueOnError)
-		invalidGroup := tf.DynamicGroup("invalid")
-		invalidGroup.String("address", "invalid-address", "Invalid target address")
+		checkers, err := factory.BuildCheckers([]factory.TargetConfig{
+			{
+				ID:      "mygroup",
+				Type:    checker.CheckType("invalid"),
+				Address: "invalid-address",
+			},
+		}, 2*time.Second)
 
-		args := []string{"--invalid.mygroup.address=invalid-address"}
-		err := tf.Parse(args)
-		require.NoError(t, err)
-
-		checkers, err := factory.BuildCheckers(tf.DynamicGroups(), 2*time.Second)
 		assert.Nil(t, checkers)
 		assert.EqualError(t, err, "unsupported check type: invalid")
 	})
@@ -69,21 +60,15 @@ func TestBuildCheckers(t *testing.T) {
 	t.Run("Invalid Header Parsing", func(t *testing.T) {
 		t.Parallel()
 
-		tf := tinyflags.NewFlagSet("test.exe", tinyflags.ContinueOnError)
-		httpGroup := tf.DynamicGroup("http")
-		httpGroup.String("address", "http://example.com", "HTTP target address")
-		httpGroup.StringSlice("header", []string{}, "HTTP headers")
-		httpGroup.String("method", "GET", "HTTP method to use")
-		httpGroup.Bool("allow-duplicate-headers", true, "Allow duplicate HTTP headers")
-
-		args := []string{
-			"--http.mygroup.address=http://example.com",
-			"--http.mygroup.header=InvalidHeaderFormat",
-		}
-		err := tf.Parse(args)
-		require.NoError(t, err)
-
-		checkers, err := factory.BuildCheckers(tf.DynamicGroups(), 2*time.Second)
+		checkers, err := factory.BuildCheckers([]factory.TargetConfig{
+			{
+				ID:          "mygroup",
+				Type:        checker.HTTP,
+				Address:     "http://example.com",
+				HTTPMethod:  "GET",
+				HTTPHeaders: []string{"InvalidHeaderFormat"},
+			},
+		}, 2*time.Second)
 
 		require.Error(t, err)
 		assert.EqualError(t, err, "invalid \"--http.mygroup.header\": invalid header format: \"InvalidHeaderFormat\"")
@@ -94,26 +79,16 @@ func TestBuildCheckers(t *testing.T) {
 	t.Run("Inalid HTTP Status codes", func(t *testing.T) {
 		t.Parallel()
 
-		tf := tinyflags.NewFlagSet("test.exe", tinyflags.ContinueOnError)
-		http := tf.DynamicGroup("http")
-		http.String("name", "", "Name of the HTTP checker")
-		http.String("method", "GET", "HTTP method to use")
-		http.String("address", "", "HTTP target URL")
-		http.Duration("interval", 1*time.Second, "Time between HTTP requests. Can be overwritten with --default-interval.")
-		http.StringSlice("header", nil, "HTTP headers to send")
-		http.Bool("allow-duplicate-headers", true, "Allow duplicate HTTP headers")
-		http.StringSlice("expected-status-codes", []string{"200"}, "Expected HTTP status codes")
-		http.Bool("skip-tls-verify", true, "Skip TLS verification")
-		http.Duration("timeout", 2*time.Second, "Timeout in seconds")
+		checkers, err := factory.BuildCheckers([]factory.TargetConfig{
+			{
+				ID:                      "myid",
+				Type:                    checker.HTTP,
+				Address:                 "http://example.com",
+				HTTPMethod:              "GET",
+				HTTPExpectedStatusCodes: []string{"201-200"},
+			},
+		}, 2*time.Second)
 
-		args := []string{
-			"--http.myid.address=http://example.com",
-			"--http.myid.expected-status-codes=201-200",
-		}
-		err := tf.Parse(args)
-		require.NoError(t, err)
-
-		checkers, err := factory.BuildCheckers(tf.DynamicGroups(), 2*time.Second)
 		require.Error(t, err)
 		assert.Len(t, checkers, 0)
 	})
@@ -121,55 +96,34 @@ func TestBuildCheckers(t *testing.T) {
 	t.Run("Valid HTTP Status codes", func(t *testing.T) {
 		t.Parallel()
 
-		tf := tinyflags.NewFlagSet("test.exe", tinyflags.ContinueOnError)
-		httpGroup := tf.DynamicGroup("http")
-		httpGroup.String("name", "", "Name of the HTTP checker. Defaults to <ID>.")
-		httpGroup.String("address", "http://example.com", "HTTP target address")
-		httpGroup.StringSlice("expected-status-codes", []string{"200,201"}, "HTTP expected status codes")
-		httpGroup.StringSlice("header", []string{}, "HTTP headers")
-		httpGroup.String("method", "GET", "HTTP method to use")
-		httpGroup.Bool("allow-duplicate-headers", true, "Allow duplicate HTTP headers")
-		httpGroup.Bool("skip-tls-verify", true, "Skip TLS verification")
-		httpGroup.Duration("timeout", 2*time.Second, "Timeout in seconds")
+		checkers, err := factory.BuildCheckers([]factory.TargetConfig{
+			{
+				ID:                      "mygroup",
+				Type:                    checker.HTTP,
+				Address:                 "http://example.com",
+				HTTPMethod:              "GET",
+				HTTPExpectedStatusCodes: []string{"200,201"},
+			},
+		}, 2*time.Second)
 
-		args := []string{
-			"--http.mygroup.address=http://example.com",
-			"--http.mygroup.expected-status-codes=200,201",
-		}
-		err := tf.Parse(args)
-		require.NoError(t, err)
-
-		checkers, err := factory.BuildCheckers(tf.DynamicGroups(), 2*time.Second)
 		require.NoError(t, err)
 		assert.Len(t, checkers, 1)
 	})
 
-	t.Run("Valid Backoff Settings", func(t *testing.T) {
+	t.Run("HTTP Backoff", func(t *testing.T) {
 		t.Parallel()
 
-		tf := tinyflags.NewFlagSet("test.exe", tinyflags.ContinueOnError)
-		httpGroup := tf.DynamicGroup("http")
-		httpGroup.String("name", "", "Name of the HTTP checker")
-		httpGroup.String("method", "GET", "HTTP method to use")
-		httpGroup.String("address", "", "HTTP target URL")
-		httpGroup.Duration("interval", 1*time.Second, "Time between HTTP requests")
-		httpGroup.StringSlice("header", nil, "HTTP headers to send")
-		httpGroup.Bool("allow-duplicate-headers", true, "Allow duplicate HTTP headers")
-		httpGroup.StringSlice("expected-status-codes", []string{"200"}, "Expected HTTP status codes")
-		httpGroup.Bool("skip-tls-verify", true, "Skip TLS verification")
-		httpGroup.Duration("timeout", 2*time.Second, "Timeout")
-		tinyflags.DynamicEnum(httpGroup, "backoff", backoff.ModeNone, "Retry backoff mode", backoff.ModeNone, backoff.ModeExponential)
-		httpGroup.Duration("max-interval", 0*time.Second, "Maximum retry interval")
+		checkers, err := factory.BuildCheckers([]factory.TargetConfig{
+			{
+				ID:          "mygroup",
+				Type:        checker.HTTP,
+				Address:     "http://example.com",
+				HTTPMethod:  "GET",
+				Backoff:     backoff.ModeExponential,
+				MaxInterval: 30 * time.Second,
+			},
+		}, 2*time.Second)
 
-		args := []string{
-			"--http.mygroup.address=http://example.com",
-			"--http.mygroup.backoff=exponential",
-			"--http.mygroup.max-interval=30s",
-		}
-		err := tf.Parse(args)
-		require.NoError(t, err)
-
-		checkers, err := factory.BuildCheckers(tf.DynamicGroups(), 2*time.Second)
 		require.NoError(t, err)
 		require.Len(t, checkers, 1)
 		assert.Equal(t, backoff.ModeExponential, checkers[0].Backoff)
@@ -179,20 +133,15 @@ func TestBuildCheckers(t *testing.T) {
 	t.Run("Valid TCP Checker", func(t *testing.T) {
 		t.Parallel()
 
-		tf := tinyflags.NewFlagSet("test.exe", tinyflags.ContinueOnError)
-		tcpGroup := tf.DynamicGroup("tcp")
-		tcpGroup.String("name", "", "Name of the HTTP checker. Defaults to <ID>.")
-		tcpGroup.String("address", "127.0.0.1:8080", "TCP target address")
-		tcpGroup.Duration("timeout", 3*time.Second, "Timeout")
+		checkers, err := factory.BuildCheckers([]factory.TargetConfig{
+			{
+				ID:         "mygroup",
+				Type:       checker.TCP,
+				Address:    "127.0.0.1:8080",
+				TCPTimeout: 3 * time.Second,
+			},
+		}, 2*time.Second)
 
-		args := []string{
-			"--tcp.mygroup.address=127.0.0.1:8080",
-			"--tcp.mygroup.timeout=3s",
-		}
-		err := tf.Parse(args)
-		require.NoError(t, err)
-
-		checkers, err := factory.BuildCheckers(tf.DynamicGroups(), 2*time.Second)
 		require.NoError(t, err)
 		assert.Len(t, checkers, 1)
 		assert.Equal(t, "127.0.0.1:8080", checkers[0].Checker.Address())
@@ -201,23 +150,17 @@ func TestBuildCheckers(t *testing.T) {
 	t.Run("Valid ICMP Checker", func(t *testing.T) {
 		t.Parallel()
 
-		tf := tinyflags.NewFlagSet("test.exe", tinyflags.ContinueOnError)
-		icmpGroup := tf.DynamicGroup("icmp")
-		icmpGroup.String("name", "", "Name of the ICMP checker. Defaults to <ID>.")
-		icmpGroup.String("address", "8.8.8.8", "ICMP target address")
-		icmpGroup.Duration("timeout", 2*time.Second, "Timeout")
-		icmpGroup.Duration("read-timeout", 0*time.Second, "Read timeout override")
-		icmpGroup.Duration("write-timeout", 0*time.Second, "Write timeout override")
+		checkers, err := factory.BuildCheckers([]factory.TargetConfig{
+			{
+				ID:               "mygroup",
+				Type:             checker.ICMP,
+				Address:          "8.8.8.8",
+				ICMPTimeout:      2 * time.Second,
+				ICMPReadTimeout:  2 * time.Second,
+				ICMPWriteTimeout: 2 * time.Second,
+			},
+		}, 2*time.Second)
 
-		args := []string{
-			"--icmp.mygroup.address=8.8.8.8",
-			"--icmp.mygroup.read-timeout=2s",
-			"--icmp.mygroup.write-timeout=2s",
-		}
-		err := tf.Parse(args)
-		require.NoError(t, err)
-
-		checkers, err := factory.BuildCheckers(tf.DynamicGroups(), 2*time.Second)
 		require.NoError(t, err)
 		assert.Len(t, checkers, 1)
 		assert.Equal(t, "8.8.8.8", checkers[0].Checker.Address())
@@ -226,23 +169,15 @@ func TestBuildCheckers(t *testing.T) {
 	t.Run("Invalid ICMP Checker", func(t *testing.T) {
 		t.Parallel()
 
-		tf := tinyflags.NewFlagSet("test.exe", tinyflags.ContinueOnError)
-		icmpGroup := tf.DynamicGroup("icmp")
-		icmpGroup.String("name", "", "Name of the TCP checker. Defaults to <ID>.")
-		icmpGroup.String("address", "8.8.8.8", "ICMP target address")
-		icmpGroup.Duration("timeout", 2*time.Second, "Timeout")
-		icmpGroup.Duration("read-timeout", 0*time.Second, "Read timeout override")
-		icmpGroup.Duration("write-timeout", 0*time.Second, "Write timeout override")
+		checkers, err := factory.BuildCheckers([]factory.TargetConfig{
+			{
+				ID:      "mygroup",
+				Type:    checker.ICMP,
+				Address: "://invalid-url",
+			},
+		}, 2*time.Second)
 
-		args := []string{
-			"--icmp.mygroup.address=://invalid-url",
-		}
-
-		err := tf.Parse(args)
-		require.NoError(t, err)
-
-		checker, err := factory.BuildCheckers(tf.DynamicGroups(), 2*time.Second)
-		assert.Nil(t, checker)
+		assert.Nil(t, checkers)
 		require.Error(t, err)
 	})
 }

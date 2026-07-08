@@ -1,57 +1,50 @@
 package logging
 
 import (
-	"strings"
+	"bytes"
+	"context"
+	"log/slog"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
+// TestSetupLogger verifies logger setup for supported and fallback formats.
 func TestSetupLogger(t *testing.T) {
 	t.Parallel()
 
-	// Test that the logger includes the version and outputs correctly.
-	t.Run("Logger includes version and writes to output", func(t *testing.T) {
+	t.Run("json logger writes json", func(t *testing.T) {
 		t.Parallel()
 
-		var output strings.Builder
-		version := "1.0.0"
+		var buf bytes.Buffer
+		logger := SetupLogger(LogFormatJSON, &buf)
 
-		logger := SetupLogger(version, &output)
-		assert.NotNil(t, logger)
+		logger.Info("hello", "key", "value")
 
-		logger.Info("Test log message")
-		logOutput := output.String()
-		assert.Contains(t, logOutput, "Test log message")
-		assert.Contains(t, logOutput, "version=1.0.0")
+		assert.Contains(t, buf.String(), `"msg":"hello"`)
+		assert.Contains(t, buf.String(), `"key":"value"`)
 	})
 
-	// Test that the logger writes output to the correct writer.
-	t.Run("Logger writes to specified output", func(t *testing.T) {
+	t.Run("text logger writes text", func(t *testing.T) {
 		t.Parallel()
 
-		var output strings.Builder
-		version := "2.0.0"
+		var buf bytes.Buffer
+		logger := SetupLogger(LogFormatText, &buf)
 
-		logger := SetupLogger(version, &output)
-		assert.NotNil(t, logger)
+		logger.Info("hello", "key", "value")
 
-		logger.Warn("This is a warning")
-
-		logOutput := output.String()
-		assert.Contains(t, logOutput, "This is a warning")
+		assert.Contains(t, buf.String(), "msg=hello")
+		assert.Contains(t, buf.String(), "key=value")
 	})
-}
 
-func TestSetupLoggerJSONFormat(t *testing.T) {
-	t.Parallel()
+	t.Run("invalid format falls back to json", func(t *testing.T) {
+		t.Parallel()
 
-	var output strings.Builder
-	logger := SetupLogger("1.0.0", &output, Config{Format: FormatJSON})
+		var buf bytes.Buffer
+		logger := SetupLogger(LogFormat("invalid"), &buf)
 
-	logger.Info("json log message")
+		logger.LogAttrs(context.Background(), slog.LevelInfo, "fallback")
 
-	logOutput := output.String()
-	assert.Contains(t, logOutput, `"msg":"json log message"`)
-	assert.Contains(t, logOutput, `"version":"1.0.0"`)
+		assert.Contains(t, buf.String(), `"msg":"fallback"`)
+	})
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// TestCreateHTTPHeadersMap_DuplicateHeadersAllowed verifies the expected behavior.
 func TestCreateHTTPHeadersMap_DuplicateHeadersAllowed(t *testing.T) {
 	headers, err := createHTTPHeadersMap([]string{
 		"X-Test=one",
@@ -18,12 +19,14 @@ func TestCreateHTTPHeadersMap_DuplicateHeadersAllowed(t *testing.T) {
 	assert.Equal(t, []string{"one", "two"}, headers["X-Test"])
 }
 
+// TestCreateHTTPHeadersMap_NilHeadersAllowed verifies the expected behavior.
 func TestCreateHTTPHeadersMap_NilHeadersAllowed(t *testing.T) {
 	headers, err := createHTTPHeadersMap(nil, false)
 	require.NoError(t, err)
 	assert.Equal(t, http.Header{}, headers)
 }
 
+// TestCreateHTTPHeadersMap_ResolvableValue verifies the expected behavior.
 func TestCreateHTTPHeadersMap_ResolvableValue(t *testing.T) {
 	require.NoError(t, os.Setenv("NEVER_TEST_HEADER", "secret"))
 	t.Cleanup(func() {

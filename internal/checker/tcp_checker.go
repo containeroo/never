@@ -15,9 +15,16 @@ type TCPChecker struct {
 	dialer  *net.Dialer
 }
 
+// Address returns the checker address.
 func (c *TCPChecker) Address() string { return c.address }
-func (c *TCPChecker) Name() string    { return c.name }
-func (c *TCPChecker) Type() string    { return TCP.String() }
+
+// Name returns the checker name.
+func (c *TCPChecker) Name() string { return c.name }
+
+// Type returns the checker type.
+func (c *TCPChecker) Type() string { return TCP.String() }
+
+// Check performs the checker operation.
 func (c *TCPChecker) Check(ctx context.Context) error {
 	conn, err := c.dialer.DialContext(ctx, "tcp", c.address)
 	if err != nil {

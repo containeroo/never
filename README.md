@@ -35,7 +35,8 @@ Whether you're waiting on a `port`, `ping`, or a `200 OK`, `N.E.V.E.R.` backs do
 | -------------------- | -------- | ------- | ------------------------------------------------------------------- |
 | `--default-interval` | duration | `2s`    | Default interval between checks. Can be overridden for each target. |
 | `--max-attempts`     | int      | `-1`    | Maximum attempts before giving up. Use `-1` to retry endlessly.     |
-| `--log-format`      | enum     | `text`  | Log output format: `text` or `json`.                               |
+| `--log-format`       | enum     | `text`  | Log output format: `text` or `json`.                                |
+| `--log-level`        | enum     | `info`  | Minimum log level: `debug`, `info`, `warn` or `error`.              |
 | `--version`          | bool     | `false` | Show version and exit.                                              |
 | `--help`, `-h`       | bool     | `false` | Show help.                                                          |
 

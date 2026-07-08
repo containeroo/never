@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// TestNewChecker verifies the expected behavior.
 func TestNewChecker(t *testing.T) {
 	t.Parallel()
 
@@ -50,6 +51,7 @@ func TestNewChecker(t *testing.T) {
 	})
 }
 
+// TestParseCheckType verifies the expected behavior.
 func TestParseCheckType(t *testing.T) {
 	t.Parallel()
 

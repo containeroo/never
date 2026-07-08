@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// TestIsResolvableValue verifies the expected behavior.
 func TestIsResolvableValue(t *testing.T) {
 	assert.True(t, IsResolvableValue("env:PATH"))
 	assert.True(t, IsResolvableValue("file:/config/app.txt//KeyName"))
@@ -18,6 +19,7 @@ func TestIsResolvableValue(t *testing.T) {
 	assert.False(t, IsResolvableValue("gopher://example.com"))
 }
 
+// TestIsHostnameLike verifies the expected behavior.
 func TestIsHostnameLike(t *testing.T) {
 	assert.True(t, IsHostnameLike("example.com"))
 	assert.True(t, IsHostnameLike("sub.domain.local"))
@@ -33,6 +35,7 @@ func TestIsHostnameLike(t *testing.T) {
 	assert.False(t, IsHostnameLike("exa_mple.com"))
 }
 
+// TestIsAlphaNum verifies the expected behavior.
 func TestIsAlphaNum(t *testing.T) {
 	assert.True(t, isAlphaNum('a'))
 	assert.True(t, isAlphaNum('A'))

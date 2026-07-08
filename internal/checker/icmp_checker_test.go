@@ -149,6 +149,7 @@ func TestICMPCheckerCheckWriteError(t *testing.T) {
 	assert.EqualError(t, err, "failed to send ICMP request: mock write error")
 }
 
+// TestICMPCheckerCheckListenPacketError verifies the expected behavior.
 func TestICMPCheckerCheckListenPacketError(t *testing.T) {
 	t.Parallel()
 
@@ -180,6 +181,7 @@ func TestICMPCheckerCheckListenPacketError(t *testing.T) {
 	assert.EqualError(t, err, "failed to listen for ICMP packets: mock listen packet error")
 }
 
+// TestICMPCheckerCheckMakeRequestError verifies the expected behavior.
 func TestICMPCheckerCheckMakeRequestError(t *testing.T) {
 	t.Parallel()
 
@@ -214,6 +216,7 @@ func TestICMPCheckerCheckMakeRequestError(t *testing.T) {
 	assert.EqualError(t, err, "failed to create ICMP request: mock make request error")
 }
 
+// TestICMPCheckerCheckWriteDeadlineError verifies the expected behavior.
 func TestICMPCheckerCheckWriteDeadlineError(t *testing.T) {
 	t.Parallel()
 
@@ -284,6 +287,7 @@ func TestICMPCheckerCheckReadError(t *testing.T) {
 	assert.EqualError(t, err, "failed to read ICMP reply: mock read error")
 }
 
+// TestICMPCheckerSetWriteDeadlineError verifies the expected behavior.
 func TestICMPCheckerSetWriteDeadlineError(t *testing.T) {
 	t.Parallel()
 
@@ -321,6 +325,7 @@ func TestICMPCheckerSetWriteDeadlineError(t *testing.T) {
 	assert.EqualError(t, err, "failed to set write deadline: mock write deadline error")
 }
 
+// TestICMPCheckerSetReadDeadlineError verifies the expected behavior.
 func TestICMPCheckerSetReadDeadlineError(t *testing.T) {
 	t.Parallel()
 
@@ -358,6 +363,7 @@ func TestICMPCheckerSetReadDeadlineError(t *testing.T) {
 	assert.EqualError(t, err, "failed to set read deadline: mock write deadline error")
 }
 
+// TestICMPCheckerValidateReplyError verifies the expected behavior.
 func TestICMPCheckerValidateReplyError(t *testing.T) {
 	t.Parallel()
 

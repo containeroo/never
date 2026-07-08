@@ -5,35 +5,28 @@ import (
 	"log/slog"
 )
 
+// LogFormat defines the supported log formats.
+type LogFormat string
+
 const (
-	// FormatText writes logs in slog text format.
-	FormatText string = "text"
-	// FormatJSON writes logs in slog JSON format.
-	FormatJSON string = "json"
+	LogFormatText LogFormat = "text"
+	LogFormatJSON LogFormat = "json"
 )
 
-// Config controls logger output behavior.
-type Config struct {
-	Format string
-}
-
-// SetupLogger configures the application logger.
-func SetupLogger(version string, output io.Writer, configs ...Config) *slog.Logger {
-	cfg := Config{Format: FormatText}
-	if len(configs) > 0 {
-		cfg = configs[0]
-	}
-	if cfg.Format == "" {
-		cfg.Format = FormatText
-	}
+// SetupLogger configures a structured logger.
+func SetupLogger(logFormat LogFormat, output io.Writer) *slog.Logger {
+	handlerOpts := &slog.HandlerOptions{}
 
 	var handler slog.Handler
-	switch cfg.Format {
-	case FormatJSON:
-		handler = slog.NewJSONHandler(output, &slog.HandlerOptions{})
+	switch logFormat {
+	case LogFormatJSON:
+		handler = slog.NewJSONHandler(output, handlerOpts)
+	case LogFormatText:
+		handler = slog.NewTextHandler(output, handlerOpts)
 	default:
-		handler = slog.NewTextHandler(output, &slog.HandlerOptions{})
+		// Default to JSON if an invalid format is provided.
+		handler = slog.NewJSONHandler(output, handlerOpts)
 	}
 
-	return slog.New(handler).With(slog.String("version", version))
+	return slog.New(handler)
 }

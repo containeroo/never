@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/containeroo/never/internal/cli"
 	"github.com/containeroo/never/internal/factory"
-	"github.com/containeroo/never/internal/flag"
 	"github.com/containeroo/never/internal/logging"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -21,6 +21,7 @@ import (
 // fake version for testing
 const version string = "0.0.0"
 
+// TestRunAllHTTPReady verifies RunAll succeeds when an HTTP target is ready.
 func TestRunAllHTTPReady(t *testing.T) {
 	t.Parallel()
 
@@ -37,15 +38,15 @@ func TestRunAllHTTPReady(t *testing.T) {
 	}
 
 	// Build checkers via flags+factory (same path app would use).
-	fs, err := flag.ParseFlags(args, version)
+	fs, err := cli.ParseFlags(args, version)
 	require.NoError(t, err)
 
-	checkers, err := factory.BuildCheckers(fs.DynamicGroups, fs.DefaultCheckInterval)
+	checkers, err := factory.BuildCheckers(fs.Targets, fs.DefaultCheckInterval)
 	require.NoError(t, err)
 
 	// Run
 	var output strings.Builder
-	logger := logging.SetupLogger(version, &output)
+	logger := logging.SetupLogger(logging.LogFormatText, &output)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -59,6 +60,7 @@ func TestRunAllHTTPReady(t *testing.T) {
 	assert.Contains(t, lines[len(lines)-1], "HTTPServer is ready ✓")
 }
 
+// TestRunAllTCPReady verifies RunAll succeeds when a TCP target is ready.
 func TestRunAllTCPReady(t *testing.T) {
 	t.Parallel()
 
@@ -73,14 +75,14 @@ func TestRunAllTCPReady(t *testing.T) {
 		"--tcp.tcptest.timeout=1s",
 	}
 
-	fs, err := flag.ParseFlags(args, version)
+	fs, err := cli.ParseFlags(args, version)
 	require.NoError(t, err)
 
-	checkers, err := factory.BuildCheckers(fs.DynamicGroups, fs.DefaultCheckInterval)
+	checkers, err := factory.BuildCheckers(fs.Targets, fs.DefaultCheckInterval)
 	require.NoError(t, err)
 
 	var output strings.Builder
-	logger := logging.SetupLogger(version, &output)
+	logger := logging.SetupLogger(logging.LogFormatText, &output)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -93,6 +95,7 @@ func TestRunAllTCPReady(t *testing.T) {
 	assert.Contains(t, lines[len(lines)-1], "TCPServer is ready ✓")
 }
 
+// TestRunAllMultipleReady verifies RunAll handles multiple ready targets.
 func TestRunAllMultipleReady(t *testing.T) {
 	t.Parallel()
 
@@ -117,14 +120,14 @@ func TestRunAllMultipleReady(t *testing.T) {
 		"--tcp.tcptest.timeout=1s",
 	}
 
-	fs, err := flag.ParseFlags(args, version)
+	fs, err := cli.ParseFlags(args, version)
 	require.NoError(t, err)
 
-	checkers, err := factory.BuildCheckers(fs.DynamicGroups, fs.DefaultCheckInterval)
+	checkers, err := factory.BuildCheckers(fs.Targets, fs.DefaultCheckInterval)
 	require.NoError(t, err)
 
 	var output strings.Builder
-	logger := logging.SetupLogger(version, &output)
+	logger := logging.SetupLogger(logging.LogFormatText, &output)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -138,11 +141,12 @@ func TestRunAllMultipleReady(t *testing.T) {
 	assert.Contains(t, out, "TCPServer is ready ✓")
 }
 
+// TestRunAllNoCheckers verifies RunAll rejects an empty checker list.
 func TestRunAllNoCheckers(t *testing.T) {
 	t.Parallel()
 
 	var output bytes.Buffer
-	logger := logging.SetupLogger(version, &output)
+	logger := logging.SetupLogger(logging.LogFormatText, &output)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
@@ -153,6 +157,7 @@ func TestRunAllNoCheckers(t *testing.T) {
 	assert.EqualError(t, err, "no checkers to run")
 }
 
+// TestRunAllPropagatesError verifies checker errors are wrapped with target context.
 func TestRunAllPropagatesError(t *testing.T) {
 	t.Parallel()
 
@@ -163,14 +168,14 @@ func TestRunAllPropagatesError(t *testing.T) {
 		"--http.httpcheck.timeout=100ms",
 	}
 
-	fs, err := flag.ParseFlags(args, version)
+	fs, err := cli.ParseFlags(args, version)
 	require.NoError(t, err)
 
-	checkers, err := factory.BuildCheckers(fs.DynamicGroups, fs.DefaultCheckInterval)
+	checkers, err := factory.BuildCheckers(fs.Targets, fs.DefaultCheckInterval)
 	require.NoError(t, err)
 
 	var output strings.Builder
-	logger := logging.SetupLogger(version, &output)
+	logger := logging.SetupLogger(logging.LogFormatText, &output)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 600*time.Millisecond)
 	defer cancel()
@@ -182,6 +187,7 @@ func TestRunAllPropagatesError(t *testing.T) {
 	assert.Contains(t, err.Error(), "checker 'HTTPServer' failed")
 }
 
+// TestRunAllMaxAttempts verifies max-attempts errors propagate through RunAll.
 func TestRunAllMaxAttempts(t *testing.T) {
 	t.Parallel()
 
@@ -192,14 +198,14 @@ func TestRunAllMaxAttempts(t *testing.T) {
 		"--http.httpcheck.timeout=50ms",
 	}
 
-	fs, err := flag.ParseFlags(args, version)
+	fs, err := cli.ParseFlags(args, version)
 	require.NoError(t, err)
 
-	checkers, err := factory.BuildCheckers(fs.DynamicGroups, fs.DefaultCheckInterval)
+	checkers, err := factory.BuildCheckers(fs.Targets, fs.DefaultCheckInterval)
 	require.NoError(t, err)
 
 	var output strings.Builder
-	logger := logging.SetupLogger(version, &output)
+	logger := logging.SetupLogger(logging.LogFormatText, &output)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
@@ -209,6 +215,7 @@ func TestRunAllMaxAttempts(t *testing.T) {
 	assert.Contains(t, err.Error(), "checker 'HTTPServer' failed")
 }
 
+// unusedTCPAddr returns an unused local TCP address for tests.
 func unusedTCPAddr(t *testing.T) string {
 	t.Helper()
 

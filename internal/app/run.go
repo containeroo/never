@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/containeroo/never/internal/cli"
 	"github.com/containeroo/never/internal/factory"
-	"github.com/containeroo/never/internal/flag"
 	"github.com/containeroo/never/internal/logging"
 	"github.com/containeroo/never/internal/runner"
 
@@ -16,8 +16,8 @@ import (
 
 // Run is the main function of the application.
 func Run(ctx context.Context, version string, args []string, stdOut, stdErr io.Writer) error {
-	// Parse command-line flags
-	flags, err := flag.ParseFlags(args, version)
+	// Parse command-line cfg
+	cfg, err := cli.ParseFlags(args, version)
 	if err != nil {
 		if tinyflags.IsHelpRequested(err) || tinyflags.IsVersionRequested(err) {
 			_, _ = fmt.Fprint(stdOut, err)
@@ -28,10 +28,10 @@ func Run(ctx context.Context, version string, args []string, stdOut, stdErr io.W
 	}
 
 	// Setup logger immediately so startup errors are correctly logged.
-	logger := logging.SetupLogger(version, stdOut, logging.Config{Format: flags.LogFormat})
+	logger := logging.SetupLogger(cfg.LogFormat, stdOut)
 
 	// Initialize target checkers
-	checkers, err := factory.BuildCheckers(flags.DynamicGroups, flags.DefaultCheckInterval)
+	checkers, err := factory.BuildCheckers(cfg.Targets, cfg.DefaultCheckInterval)
 	if err != nil {
 		logger.Error("failed to initialize target checkers", "err", err)
 		return err
@@ -42,7 +42,7 @@ func Run(ctx context.Context, version string, args []string, stdOut, stdErr io.W
 	defer stop()
 
 	// Run all checkers.
-	err = runner.RunAll(ctx, checkers, flags.MaxAttempts, logger)
+	err = runner.RunAll(ctx, checkers, cfg.MaxAttempts, logger)
 
 	if cause := context.Cause(ctx); cause != nil {
 		logger.Info("context stopped", "cause", cause)

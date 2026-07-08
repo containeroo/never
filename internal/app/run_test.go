@@ -17,6 +17,7 @@ import (
 // fake version for testing
 const version string = "0.0.0"
 
+// TestRunHTTPReady verifies the expected behavior.
 func TestRunHTTPReady(t *testing.T) {
 	t.Parallel()
 
@@ -45,6 +46,7 @@ func TestRunHTTPReady(t *testing.T) {
 	assert.Contains(t, stdOutEntries[last], "HTTPServer is ready ✓")
 }
 
+// TestRunTCPReady verifies the expected behavior.
 func TestRunTCPReady(t *testing.T) {
 	t.Parallel()
 
@@ -73,6 +75,7 @@ func TestRunTCPReady(t *testing.T) {
 	assert.Contains(t, stdOutEntries[last], "TCPServer is ready ✓")
 }
 
+// TestRunConfigErrorMissingTarget verifies the expected behavior.
 func TestRunConfigErrorMissingTarget(t *testing.T) {
 	t.Parallel()
 
@@ -89,6 +92,7 @@ func TestRunConfigErrorMissingTarget(t *testing.T) {
 	assert.EqualError(t, err, "no checkers to run")
 }
 
+// TestRunConfigErrorUnsupportedCheckType verifies the expected behavior.
 func TestRunConfigErrorUnsupportedCheckType(t *testing.T) {
 	t.Parallel()
 
@@ -110,6 +114,7 @@ func TestRunConfigErrorUnsupportedCheckType(t *testing.T) {
 	assert.EqualError(t, err, "unknown dynamic group \"target\" in flag --target.unsupported.name=TestService\nunknown dynamic group \"target\" in flag --target.unsupported.address=localhost:8080\nunknown dynamic group \"target\" in flag --target.unsupported.interval=1s\nunknown dynamic group \"target\" in flag --target.unsupported.timeout=1s")
 }
 
+// TestRunConfigErrorInvalidHeaders verifies the expected behavior.
 func TestRunConfigErrorInvalidHeaders(t *testing.T) {
 	t.Parallel()
 
@@ -132,6 +137,7 @@ func TestRunConfigErrorInvalidHeaders(t *testing.T) {
 	assert.EqualError(t, err, "invalid \"--http.invalidheaders.header\": invalid header format: \"InvalidHeader\"")
 }
 
+// TestRunParseError verifies the expected behavior.
 func TestRunParseError(t *testing.T) {
 	t.Parallel()
 

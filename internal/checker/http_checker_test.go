@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// TestHTTPChecker verifies the expected behavior.
 func TestHTTPChecker(t *testing.T) {
 	t.Parallel()
 

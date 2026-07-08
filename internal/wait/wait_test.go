@@ -210,6 +210,7 @@ func TestWaitUntilReady_TCPContextCanceled(t *testing.T) {
 	}
 }
 
+// TestNewStoppedTimer verifies the expected behavior.
 func TestNewStoppedTimer(t *testing.T) {
 	t.Parallel()
 
@@ -230,6 +231,7 @@ func TestNewStoppedTimer(t *testing.T) {
 	}
 }
 
+// TestWaitUntilReady_MaxAttempts verifies the expected behavior.
 func TestWaitUntilReady_MaxAttempts(t *testing.T) {
 	t.Parallel()
 
@@ -253,6 +255,7 @@ func TestWaitUntilReady_MaxAttempts(t *testing.T) {
 	}
 }
 
+// unusedTCPAddr returns an unused local TCP address for tests.
 func unusedTCPAddr(t *testing.T) string {
 	t.Helper()
 
@@ -268,6 +271,7 @@ func unusedTCPAddr(t *testing.T) string {
 	return addr
 }
 
+// TestWaitUntilReady_ContextCanceledDuringCheckStopsGracefully verifies the expected behavior.
 func TestWaitUntilReady_ContextCanceledDuringCheckStopsGracefully(t *testing.T) {
 	t.Parallel()
 
@@ -287,7 +291,14 @@ type staticErrorChecker struct {
 	err error
 }
 
+// Check performs the checker operation.
 func (c staticErrorChecker) Check(context.Context) error { return c.err }
-func (c staticErrorChecker) Name() string                { return "CanceledServer" }
-func (c staticErrorChecker) Type() string                { return "TCP" }
-func (c staticErrorChecker) Address() string             { return "127.0.0.1:1" }
+
+// Name returns the checker name.
+func (c staticErrorChecker) Name() string { return "CanceledServer" }
+
+// Type returns the checker type.
+func (c staticErrorChecker) Type() string { return "TCP" }
+
+// Address returns the checker address.
+func (c staticErrorChecker) Address() string { return "127.0.0.1:1" }

@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// TestNewTCPChecker_Valid verifies the expected behavior.
 func TestNewTCPChecker_Valid(t *testing.T) {
 	t.Parallel()
 
@@ -26,6 +27,7 @@ func TestNewTCPChecker_Valid(t *testing.T) {
 	assert.Equal(t, checker.Type(), TCP.String())
 }
 
+// TestTCPChecker_ValidConnection verifies the expected behavior.
 func TestTCPChecker_ValidConnection(t *testing.T) {
 	t.Parallel()
 
@@ -41,6 +43,7 @@ func TestTCPChecker_ValidConnection(t *testing.T) {
 	require.NoError(t, err)
 }
 
+// TestTCPChecker_FailedConnection verifies the expected behavior.
 func TestTCPChecker_FailedConnection(t *testing.T) {
 	t.Parallel()
 
@@ -54,6 +57,7 @@ func TestTCPChecker_FailedConnection(t *testing.T) {
 	assert.Contains(t, err.Error(), "connect: connection refused")
 }
 
+// TestTCPChecker_InvalidAddress verifies the expected behavior.
 func TestTCPChecker_InvalidAddress(t *testing.T) {
 	t.Parallel()
 
@@ -67,6 +71,7 @@ func TestTCPChecker_InvalidAddress(t *testing.T) {
 	assert.EqualError(t, err, "dial tcp: address invalid-address: missing port in address")
 }
 
+// TestTCPChecker_Timeout verifies the expected behavior.
 func TestTCPChecker_Timeout(t *testing.T) {
 	t.Parallel()
 
@@ -83,6 +88,7 @@ func TestTCPChecker_Timeout(t *testing.T) {
 	assert.True(t, errors.Is(err, context.DeadlineExceeded), "expected context deadline exceeded, got %v", err)
 }
 
+// unusedTCPAddr returns an unused local TCP address for tests.
 func unusedTCPAddr(t *testing.T) string {
 	t.Helper()
 

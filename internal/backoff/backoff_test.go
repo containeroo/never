@@ -5,41 +5,53 @@ import (
 	"time"
 )
 
+// TestNextIntervalNoneKeepsBaseInterval verifies the expected behavior.
 func TestNextIntervalNoneKeepsBaseInterval(t *testing.T) {
 	t.Parallel()
 
-	got := NextInterval(ModeNone, 100*time.Millisecond, 5, 0)
+	got := NextInterval(ModeLinear, 100*time.Millisecond, 5, 0)
 	want := 100 * time.Millisecond
 	if got != want {
 		t.Fatalf("expected %s, got %s", want, got)
 	}
 }
 
+// TestNextIntervalExponentialDoublesByAttempt verifies the expected behavior.
 func TestNextIntervalExponentialDoublesByAttempt(t *testing.T) {
 	t.Parallel()
 
-	tests := []struct {
-		name    string
-		attempt int
-		want    time.Duration
-	}{
-		{name: "first failure uses base interval", attempt: 1, want: 100 * time.Millisecond},
-		{name: "second failure doubles interval", attempt: 2, want: 200 * time.Millisecond},
-		{name: "third failure doubles again", attempt: 3, want: 400 * time.Millisecond},
-	}
+	t.Run("first failure uses base interval", func(t *testing.T) {
+		t.Parallel()
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
+		got := NextInterval(ModeExponential, 100*time.Millisecond, 1, 0)
+		want := 100 * time.Millisecond
+		if got != want {
+			t.Fatalf("expected %s, got %s", want, got)
+		}
+	})
 
-			got := NextInterval(ModeExponential, 100*time.Millisecond, tt.attempt, 0)
-			if got != tt.want {
-				t.Fatalf("expected %s, got %s", tt.want, got)
-			}
-		})
-	}
+	t.Run("second failure doubles interval", func(t *testing.T) {
+		t.Parallel()
+
+		got := NextInterval(ModeExponential, 100*time.Millisecond, 2, 0)
+		want := 200 * time.Millisecond
+		if got != want {
+			t.Fatalf("expected %s, got %s", want, got)
+		}
+	})
+
+	t.Run("third failure doubles again", func(t *testing.T) {
+		t.Parallel()
+
+		got := NextInterval(ModeExponential, 100*time.Millisecond, 3, 0)
+		want := 400 * time.Millisecond
+		if got != want {
+			t.Fatalf("expected %s, got %s", want, got)
+		}
+	})
 }
 
+// TestNextIntervalExponentialCapsAtMaxInterval verifies the expected behavior.
 func TestNextIntervalExponentialCapsAtMaxInterval(t *testing.T) {
 	t.Parallel()
 

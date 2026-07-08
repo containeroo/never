@@ -12,6 +12,7 @@ var (
 	Commit  string = "none"
 )
 
+// main runs the command-line application.
 func main() {
 	// Create a root context
 	ctx := context.Background()

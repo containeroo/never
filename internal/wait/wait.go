@@ -26,7 +26,7 @@ type Option func(*options)
 func WithBackoff(mode backoff.Mode) Option {
 	return func(o *options) {
 		if mode == "" {
-			mode = backoff.ModeNone
+			mode = backoff.ModeLinear
 		}
 		o.backoffMode = mode
 	}
@@ -50,7 +50,7 @@ func WaitUntilReady(
 	logger *slog.Logger,
 	opts ...Option,
 ) error {
-	cfg := options{backoffMode: backoff.ModeNone}
+	cfg := options{backoffMode: backoff.ModeLinear}
 	for _, opt := range opts {
 		opt(&cfg)
 	}
@@ -88,7 +88,8 @@ func WaitUntilReady(
 
 		waitInterval := backoff.NextInterval(cfg.backoffMode, interval, attempt, cfg.maxInterval)
 
-		logger.Warn(fmt.Sprintf("%s is not ready ✗", checker.Name()),
+		logger.Warn(
+			fmt.Sprintf("%s is not ready ✗", checker.Name()),
 			slog.String("error", err.Error()),
 			slog.Int("attempt", attempt),
 			slog.Duration("next_interval", waitInterval),

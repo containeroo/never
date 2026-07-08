@@ -17,6 +17,7 @@ import (
 	"golang.org/x/net/ipv6"
 )
 
+// isPermissionError reports whether err is a permission error.
 func isPermissionError(t *testing.T, err error) bool {
 	t.Helper()
 	if err == nil {
@@ -31,6 +32,7 @@ func isPermissionError(t *testing.T, err error) bool {
 	return strings.Contains(s, "operation not permitted") || strings.Contains(s, "permission denied")
 }
 
+// TestNewProtocol verifies the expected behavior.
 func TestNewProtocol(t *testing.T) {
 	t.Parallel()
 
@@ -75,6 +77,7 @@ func TestNewProtocol(t *testing.T) {
 	})
 }
 
+// TestICMPv4MakeRequest verifies the expected behavior.
 func TestICMPv4MakeRequest(t *testing.T) {
 	t.Parallel()
 
@@ -89,6 +92,7 @@ func TestICMPv4MakeRequest(t *testing.T) {
 	})
 }
 
+// TestICMPv4_Network verifies the expected behavior.
 func TestICMPv4_Network(t *testing.T) {
 	t.Parallel()
 
@@ -100,6 +104,7 @@ func TestICMPv4_Network(t *testing.T) {
 	})
 }
 
+// TestICMPv4_ValidateReply verifies the expected behavior.
 func TestICMPv4_ValidateReply(t *testing.T) {
 	t.Parallel()
 
@@ -204,6 +209,7 @@ func TestICMPv4_ValidateReply(t *testing.T) {
 	})
 }
 
+// TestICMPv4_ListenPacket verifies the expected behavior.
 func TestICMPv4_ListenPacket(t *testing.T) {
 	t.Parallel()
 
@@ -266,6 +272,7 @@ func TestICMPv4_ListenPacket(t *testing.T) {
 	})
 }
 
+// TestICMPv6MakeRequest verifies the expected behavior.
 func TestICMPv6MakeRequest(t *testing.T) {
 	t.Parallel()
 
@@ -281,6 +288,7 @@ func TestICMPv6MakeRequest(t *testing.T) {
 	})
 }
 
+// TestICMPv6_Network verifies the expected behavior.
 func TestICMPv6_Network(t *testing.T) {
 	t.Parallel()
 
@@ -292,6 +300,7 @@ func TestICMPv6_Network(t *testing.T) {
 	})
 }
 
+// TestICMPv6_ValidateReply verifies the expected behavior.
 func TestICMPv6_ValidateReply(t *testing.T) {
 	t.Parallel()
 
@@ -398,6 +407,7 @@ func TestICMPv6_ValidateReply(t *testing.T) {
 	})
 }
 
+// TestICMPv6_ListenPacket verifies the expected behavior.
 func TestICMPv6_ListenPacket(t *testing.T) {
 	t.Parallel()
 
