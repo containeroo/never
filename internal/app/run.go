@@ -4,14 +4,13 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os"
-	"os/signal"
-	"syscall"
 
 	"github.com/containeroo/never/internal/factory"
 	"github.com/containeroo/never/internal/flag"
 	"github.com/containeroo/never/internal/logging"
 	"github.com/containeroo/never/internal/runner"
+
+	"github.com/containeroo/httpgrace/server"
 	"github.com/containeroo/tinyflags"
 )
 
@@ -38,12 +37,18 @@ func Run(ctx context.Context, version string, args []string, stdOut, stdErr io.W
 		return err
 	}
 
-	// Create a new context that listens for interrupt signals
-	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
-	defer cancel()
+	// Create a signal-aware context that preserves the shutdown cause.
+	ctx, stop := server.SignalContext(ctx)
+	defer stop()
 
-	// Run all checkers
-	if err = runner.RunAll(ctx, checkers, flags.MaxAttempts, logger); err != nil {
+	// Run all checkers.
+	err = runner.RunAll(ctx, checkers, flags.MaxAttempts, logger)
+
+	if cause := context.Cause(ctx); cause != nil {
+		logger.Info("context stopped", "cause", cause)
+	}
+
+	if err != nil {
 		logger.Error("failed to run all checkers", "err", err)
 		return err
 	}

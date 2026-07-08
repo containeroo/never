@@ -43,6 +43,12 @@ func WaitUntilReady(
 			logger.Info(fmt.Sprintf("%s is ready ✓", checker.Name()), slog.Int("attempt", attempt))
 			return nil // Successfully connected to the target
 		}
+		if errors.Is(err, context.Canceled) {
+			return nil // Treat cancellation during a check as expected shutdown.
+		}
+		if errors.Is(err, context.DeadlineExceeded) {
+			return err
+		}
 
 		logger.Warn(fmt.Sprintf("%s is not ready ✗", checker.Name()),
 			slog.String("error", err.Error()),
@@ -50,7 +56,7 @@ func WaitUntilReady(
 		)
 
 		if maxAttempts > 0 && attempt >= maxAttempts {
-			return ErrMaxAttemptsExceeded
+			return fmt.Errorf("%w after %d attempts: %w", ErrMaxAttemptsExceeded, attempt, err)
 		}
 
 		timer.Reset(interval) // Reset starts the timer again

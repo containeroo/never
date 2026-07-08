@@ -267,3 +267,27 @@ func unusedTCPAddr(t *testing.T) string {
 
 	return addr
 }
+
+func TestWaitUntilReady_ContextCanceledDuringCheckStopsGracefully(t *testing.T) {
+	t.Parallel()
+
+	var output strings.Builder
+	logger := slog.New(slog.NewTextHandler(&output, nil))
+
+	err := WaitUntilReady(context.Background(), 10*time.Millisecond, -1, staticErrorChecker{err: context.Canceled}, logger)
+	if err != nil {
+		t.Fatalf("Expected no error, got %v", err)
+	}
+	if strings.Contains(output.String(), "is not ready") {
+		t.Fatalf("Expected cancellation to avoid not-ready log, got %q", output.String())
+	}
+}
+
+type staticErrorChecker struct {
+	err error
+}
+
+func (c staticErrorChecker) Check(context.Context) error { return c.err }
+func (c staticErrorChecker) Name() string                { return "CanceledServer" }
+func (c staticErrorChecker) Type() string                { return "TCP" }
+func (c staticErrorChecker) Address() string             { return "127.0.0.1:1" }
