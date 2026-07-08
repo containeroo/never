@@ -7,7 +7,7 @@ import (
 )
 
 // registerICMPFlags registers ICMP-related flags and binds them to cfg.
-func registerICMPFlags(tf *tinyflags.FlagSet, cfg *Config) {
+func registerICMPFlags(tf *tinyflags.FlagSet) {
 	icmp := tf.DynamicGroup("icmp").Title("ICMP")
 	icmp.String("name", "", "Name of the ICMP checker. Defaults to <ID>.")
 	icmp.String("address", "", "ICMP target address").

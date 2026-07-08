@@ -8,7 +8,7 @@ import (
 )
 
 // registerHTTPFlags registers HTTP-related flags and binds them to cfg.
-func registerHTTPFlags(tf *tinyflags.FlagSet, cfg *Config) {
+func registerHTTPFlags(tf *tinyflags.FlagSet) {
 	httpGroup := tf.DynamicGroup("http").Title("HTTP")
 	httpGroup.String("name", "", "Name of the HTTP checker. Defaults to <ID>.")
 	tinyflags.DynamicEnum(

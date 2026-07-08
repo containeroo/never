@@ -37,9 +37,9 @@ func ParseFlags(args []string, version string) (*Config, error) {
 	tf.Note("\nFor more information, see https://github.com/containeroo/never")
 
 	registerAppFlags(tf, &cfg)
-	registerHTTPFlags(tf, &cfg)
-	registerTCPFlags(tf, &cfg)
-	registerICMPFlags(tf, &cfg)
+	registerHTTPFlags(tf)
+	registerTCPFlags(tf)
+	registerICMPFlags(tf)
 
 	if err := tf.Parse(args); err != nil {
 		return nil, err

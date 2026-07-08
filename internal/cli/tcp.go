@@ -7,7 +7,7 @@ import (
 )
 
 // registerTCPFlags registers TCP-related flags and binds them to cfg.
-func registerTCPFlags(tf *tinyflags.FlagSet, cfg *Config) {
+func registerTCPFlags(tf *tinyflags.FlagSet) {
 	tcp := tf.DynamicGroup("tcp").Title("TCP")
 	tcp.String("name", "", "Name of the TCP checker. Defaults to <ID>.")
 	tcp.String("address", "", "TCP target address").
