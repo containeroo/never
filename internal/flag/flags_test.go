@@ -53,12 +53,98 @@ func TestParseFlags(t *testing.T) {
 		assert.EqualError(t, err, "invalid value for flag --default-interval: time: invalid duration \"invalid\"")
 	})
 
+	t.Run("HTTP Method Invalid", func(t *testing.T) {
+		t.Parallel()
+
+		args := []string{
+			"--http.web.address=http://example.com",
+			"--http.web.method=INVALID",
+		}
+
+		_, err := ParseFlags(args, "1.0.0")
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "INVALID")
+	})
+
 	t.Run("ICMP Hostname Allowed", func(t *testing.T) {
 		t.Parallel()
 
 		args := []string{"--icmp.host.address=example.com"}
 		_, err := ParseFlags(args, "1.0.0")
 		require.NoError(t, err)
+	})
+
+	t.Run("ICMP Timeout Allowed", func(t *testing.T) {
+		t.Parallel()
+
+		args := []string{
+			"--icmp.host.address=example.com",
+			"--icmp.host.timeout=3s",
+		}
+		_, err := ParseFlags(args, "1.0.0")
+		require.NoError(t, err)
+	})
+
+	t.Run("Log Format JSON", func(t *testing.T) {
+		t.Parallel()
+
+		args := []string{"--log-format=json"}
+
+		parsedFlags, err := ParseFlags(args, "1.0.0")
+		require.NoError(t, err)
+		assert.Equal(t, "json", parsedFlags.LogFormat)
+	})
+
+	t.Run("Log Format Invalid", func(t *testing.T) {
+		t.Parallel()
+
+		_, err := ParseFlags([]string{"--log-format=xml"}, "1.0.0")
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "xml")
+	})
+
+	t.Run("Log Level Warn", func(t *testing.T) {
+		t.Parallel()
+
+		args := []string{"--log-level=warn"}
+
+		parsedFlags, err := ParseFlags(args, "1.0.0")
+		require.NoError(t, err)
+		assert.Equal(t, "warn", parsedFlags.LogLevel)
+	})
+
+	t.Run("Log Level Invalid", func(t *testing.T) {
+		t.Parallel()
+
+		_, err := ParseFlags([]string{"--log-level=trace"}, "1.0.0")
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "trace")
+	})
+
+	t.Run("HTTP Backoff Exponential", func(t *testing.T) {
+		t.Parallel()
+
+		args := []string{
+			"--http.web.address=http://example.com",
+			"--http.web.backoff=exponential",
+			"--http.web.max-interval=30s",
+		}
+
+		_, err := ParseFlags(args, "1.0.0")
+		require.NoError(t, err)
+	})
+
+	t.Run("HTTP Backoff Invalid", func(t *testing.T) {
+		t.Parallel()
+
+		args := []string{
+			"--http.web.address=http://example.com",
+			"--http.web.backoff=linear",
+		}
+
+		_, err := ParseFlags(args, "1.0.0")
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "linear")
 	})
 
 	t.Run("Max Attempts Valid", func(t *testing.T) {

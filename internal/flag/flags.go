@@ -4,11 +4,14 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"net/http"
 	"net/url"
 	"strings"
 	"time"
 
 	"github.com/containeroo/httputils"
+	"github.com/containeroo/never/internal/backoff"
+	"github.com/containeroo/never/internal/logging"
 	"github.com/containeroo/never/internal/utils"
 	"github.com/containeroo/tinyflags"
 )
@@ -26,6 +29,7 @@ type ParsedFlags struct {
 	Version              string
 	DefaultCheckInterval time.Duration
 	MaxAttempts          int
+	LogFormat            string
 	DynamicGroups        []*tinyflags.DynamicGroup
 }
 
@@ -45,13 +49,28 @@ func ParseFlags(args []string, version string) (*ParsedFlags, error) {
 		Placeholder("N").
 		Value()
 
+	logFormat := tf.Enum("log-format", logging.FormatText, "Log output format.", logging.FormatText, logging.FormatJSON).
+		Placeholder("FORMAT").
+		Value()
+
 	tf.Note("\nFor more information, see https://github.com/containeroo/never")
 
 	// HTTP flags
-	http := tf.DynamicGroup("http").Title("HTTP")
-	http.String("name", "", "Name of the HTTP checker. Defaults to <ID>.")
-	http.String("method", "GET", "HTTP method to use")
-	http.String("address", "", "HTTP target URL").
+	httpGroup := tf.DynamicGroup("http").Title("HTTP")
+	httpGroup.String("name", "", "Name of the HTTP checker. Defaults to <ID>.")
+	tinyflags.DynamicEnum(httpGroup, "method", http.MethodGet, "HTTP method to use.",
+		http.MethodGet,
+		http.MethodHead,
+		http.MethodPost,
+		http.MethodPut,
+		http.MethodPatch,
+		http.MethodDelete,
+		http.MethodConnect,
+		http.MethodOptions,
+		http.MethodTrace,
+	).
+		Placeholder("METHOD")
+	httpGroup.String("address", "", "HTTP target URL").
 		Validate(func(s string) error {
 			s = strings.TrimSpace(s)
 			if utils.IsResolvableValue(s) {
@@ -67,7 +86,7 @@ func ParseFlags(args []string, version string) (*ParsedFlags, error) {
 			return nil
 		}).
 		Required()
-	http.Duration("interval", 0*time.Second, "Time between HTTP requests. Defaults to --default-interval when unset or 0.").
+	httpGroup.Duration("interval", 0*time.Second, "Time between HTTP requests. Defaults to --default-interval when unset or 0.").
 		Validate(func(d time.Duration) error {
 			if d < 0 {
 				return errors.New("interval must be non-negative")
@@ -75,7 +94,7 @@ func ParseFlags(args []string, version string) (*ParsedFlags, error) {
 			return nil
 		}).
 		Placeholder("DURATION")
-	http.Int("max-attempts", 0, "Maximum attempts before giving up. Defaults to --max-attempts when unset or 0.").
+	httpGroup.Int("max-attempts", 0, "Maximum attempts before giving up. Defaults to --max-attempts when unset or 0.").
 		Validate(func(v int) error {
 			if v == 0 {
 				return nil
@@ -83,10 +102,11 @@ func ParseFlags(args []string, version string) (*ParsedFlags, error) {
 			return validateMaxAttempts(v)
 		}).
 		Placeholder("N")
-	http.StringSlice("header", []string{}, "HTTP headers to send").
+	registerRetryFlags(httpGroup)
+	httpGroup.StringSlice("header", []string{}, "HTTP headers to send").
 		Placeholder("KEY=VALUE)")
-	http.Bool("allow-duplicate-headers", defaultHTTPAllowDuplicateHeaders, "Allow duplicate HTTP headers")
-	http.StringSlice("expected-status-codes",
+	httpGroup.Bool("allow-duplicate-headers", defaultHTTPAllowDuplicateHeaders, "Allow duplicate HTTP headers")
+	httpGroup.StringSlice("expected-status-codes",
 		[]string{"200"},
 		"Expected HTTP status codes. Comma-separated list of status codes, ranges possible (eg \"200-299\", \"300,301\")",
 	).
@@ -101,8 +121,8 @@ func ParseFlags(args []string, version string) (*ParsedFlags, error) {
 		}).
 		Placeholder("CODES...")
 
-	http.Bool("skip-tls-verify", defaultHTTPSkipTLSVerify, "Skip TLS verification")
-	http.Duration("timeout", 2*time.Second, "Request timeout").
+	httpGroup.Bool("skip-tls-verify", defaultHTTPSkipTLSVerify, "Skip TLS verification")
+	httpGroup.Duration("timeout", 2*time.Second, "Request timeout").
 		Validate(func(d time.Duration) error {
 			if d <= 0 {
 				return errors.New("timeout must be positive")
@@ -158,18 +178,27 @@ func ParseFlags(args []string, version string) (*ParsedFlags, error) {
 			return validateMaxAttempts(v)
 		}).
 		Placeholder("N")
-	icmp.Duration("read-timeout", 2*time.Second, "Timeout for ICMP read").
+	registerRetryFlags(icmp)
+	icmp.Duration("timeout", 2*time.Second, "Timeout for ICMP read and write").
 		Validate(func(d time.Duration) error {
 			if d <= 0 {
-				return errors.New("read-timeout must be positive")
+				return errors.New("timeout must be positive")
 			}
 			return nil
 		}).
 		Placeholder("DURATION")
-	icmp.Duration("write-timeout", 2*time.Second, "Timeout for ICMP write").
+	icmp.Duration("read-timeout", 0*time.Second, "Advanced: override the ICMP read timeout. Defaults to --icmp.<ID>.timeout when unset or 0.").
 		Validate(func(d time.Duration) error {
-			if d <= 0 {
-				return errors.New("write-timeout must be positive")
+			if d < 0 {
+				return errors.New("read-timeout must be non-negative")
+			}
+			return nil
+		}).
+		Placeholder("DURATION")
+	icmp.Duration("write-timeout", 0*time.Second, "Advanced: override the ICMP write timeout. Defaults to --icmp.<ID>.timeout when unset or 0.").
+		Validate(func(d time.Duration) error {
+			if d < 0 {
+				return errors.New("write-timeout must be non-negative")
 			}
 			return nil
 		}).
@@ -214,6 +243,7 @@ func ParseFlags(args []string, version string) (*ParsedFlags, error) {
 			return validateMaxAttempts(v)
 		}).
 		Placeholder("N")
+	registerRetryFlags(tcp)
 
 	// Parse unknown arguments with dynamic flags
 	if err := tf.Parse(args); err != nil {
@@ -223,6 +253,7 @@ func ParseFlags(args []string, version string) (*ParsedFlags, error) {
 	return &ParsedFlags{
 		DefaultCheckInterval: *interval,
 		MaxAttempts:          *maxAttempts,
+		LogFormat:            *logFormat,
 		DynamicGroups:        tf.DynamicGroups(),
 	}, nil
 }
@@ -236,4 +267,17 @@ func validateMaxAttempts(v int) error {
 		return errors.New("max-attempts must be -1 or positive")
 	}
 	return nil
+}
+
+func registerRetryFlags(group *tinyflags.DynamicGroup) {
+	tinyflags.DynamicEnum(group, "backoff", backoff.ModeNone, "Retry backoff mode.", backoff.ModeNone, backoff.ModeExponential).
+		Placeholder("MODE")
+	group.Duration("max-interval", 0*time.Second, "Maximum retry interval when backoff increases the delay. Defaults to uncapped when unset or 0.").
+		Validate(func(d time.Duration) error {
+			if d < 0 {
+				return errors.New("max-interval must be non-negative")
+			}
+			return nil
+		}).
+		Placeholder("DURATION")
 }

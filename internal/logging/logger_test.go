@@ -42,3 +42,16 @@ func TestSetupLogger(t *testing.T) {
 		assert.Contains(t, logOutput, "This is a warning")
 	})
 }
+
+func TestSetupLoggerJSONFormat(t *testing.T) {
+	t.Parallel()
+
+	var output strings.Builder
+	logger := SetupLogger("1.0.0", &output, Config{Format: FormatJSON})
+
+	logger.Info("json log message")
+
+	logOutput := output.String()
+	assert.Contains(t, logOutput, `"msg":"json log message"`)
+	assert.Contains(t, logOutput, `"version":"1.0.0"`)
+}

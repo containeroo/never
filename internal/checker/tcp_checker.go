@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-const defaultTCPTimeout time.Duration = 1 * time.Second
+const defaultTCPTimeout time.Duration = 2 * time.Second
 
 // TCPChecker implements the Checker interface for TCP checks.
 type TCPChecker struct {

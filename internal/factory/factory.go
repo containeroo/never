@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/containeroo/httputils"
+	"github.com/containeroo/never/internal/backoff"
 	"github.com/containeroo/never/internal/checker"
 	"github.com/containeroo/resolver"
 	"github.com/containeroo/tinyflags"
@@ -18,6 +19,8 @@ type CheckerWithInterval struct {
 	Checker  checker.Checker
 	// MaxAttempts == 0 means use global; -1 means endless retries.
 	MaxAttempts int
+	Backoff     backoff.Mode
+	MaxInterval time.Duration
 }
 
 // BuildCheckers creates a list of CheckerWithInterval from the parsed dynflags configuration.
@@ -44,6 +47,16 @@ func BuildCheckers(dynamicGroups []*tinyflags.DynamicGroup, defaultInterval time
 			maxAttempts := 0
 			if v, _ := tinyflags.GetDynamic[int](group, id, "max-attempts"); v != 0 {
 				maxAttempts = v
+			}
+
+			backoffMode := tinyflags.GetOrDefaultDynamic[backoff.Mode](group, id, "backoff")
+			if backoffMode == "" {
+				backoffMode = backoff.ModeNone
+			}
+
+			maxInterval := time.Duration(0)
+			if v, _ := tinyflags.GetDynamic[time.Duration](group, id, "max-interval"); v != 0 {
+				maxInterval = v
 			}
 
 			var opts []checker.Option
@@ -81,11 +94,16 @@ func BuildCheckers(dynamicGroups []*tinyflags.DynamicGroup, defaultInterval time
 				opts = append(opts, checker.WithTCPTimeout(timeout))
 
 			case checker.ICMP:
-				rt := tinyflags.GetOrDefaultDynamic[time.Duration](group, id, "read-timeout")
-				opts = append(opts, checker.WithICMPReadTimeout(rt))
+				timeout := tinyflags.GetOrDefaultDynamic[time.Duration](group, id, "timeout")
+				opts = append(opts, checker.WithICMPTimeout(timeout))
 
-				wt := tinyflags.GetOrDefaultDynamic[time.Duration](group, id, "write-timeout")
-				opts = append(opts, checker.WithICMPWriteTimeout(wt))
+				if rt, _ := tinyflags.GetDynamic[time.Duration](group, id, "read-timeout"); rt != 0 {
+					opts = append(opts, checker.WithICMPReadTimeout(rt))
+				}
+
+				if wt, _ := tinyflags.GetDynamic[time.Duration](group, id, "write-timeout"); wt != 0 {
+					opts = append(opts, checker.WithICMPWriteTimeout(wt))
+				}
 			}
 
 			name := id
@@ -102,6 +120,8 @@ func BuildCheckers(dynamicGroups []*tinyflags.DynamicGroup, defaultInterval time
 				Interval:    interval,
 				Checker:     instance,
 				MaxAttempts: maxAttempts,
+				Backoff:     backoffMode,
+				MaxInterval: maxInterval,
 			})
 		}
 	}

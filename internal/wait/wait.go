@@ -7,11 +7,39 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/containeroo/never/internal/backoff"
 	"github.com/containeroo/never/internal/checker"
 )
 
 // ErrMaxAttemptsExceeded is returned when the maximum number of attempts is reached.
 var ErrMaxAttemptsExceeded = errors.New("max attempts reached")
+
+type options struct {
+	backoffMode backoff.Mode
+	maxInterval time.Duration
+}
+
+// Option configures WaitUntilReady behavior.
+type Option func(*options)
+
+// WithBackoff sets the retry backoff mode.
+func WithBackoff(mode backoff.Mode) Option {
+	return func(o *options) {
+		if mode == "" {
+			mode = backoff.ModeNone
+		}
+		o.backoffMode = mode
+	}
+}
+
+// WithMaxInterval caps the retry interval when backoff increases it.
+func WithMaxInterval(maxInterval time.Duration) Option {
+	return func(o *options) {
+		if maxInterval > 0 {
+			o.maxInterval = maxInterval
+		}
+	}
+}
 
 // WaitUntilReady continuously attempts to connect to the specified target until it becomes available or the context is canceled.
 func WaitUntilReady(
@@ -20,13 +48,21 @@ func WaitUntilReady(
 	maxAttempts int,
 	checker checker.Checker,
 	logger *slog.Logger,
+	opts ...Option,
 ) error {
+	cfg := options{backoffMode: backoff.ModeNone}
+	for _, opt := range opts {
+		opt(&cfg)
+	}
+
 	logger = logger.With(
 		slog.String("target", checker.Name()),
 		slog.String("type", checker.Type()),
 		slog.String("address", checker.Address()),
 		slog.Duration("interval", interval),
 		slog.Int("max_attempts", maxAttempts),
+		slog.String("backoff", cfg.backoffMode.String()),
+		slog.Duration("max_interval", cfg.maxInterval),
 	)
 
 	logger.Info(fmt.Sprintf("Waiting for %s to become ready...", checker.Name()))
@@ -50,16 +86,19 @@ func WaitUntilReady(
 			return err
 		}
 
+		waitInterval := backoff.NextInterval(cfg.backoffMode, interval, attempt, cfg.maxInterval)
+
 		logger.Warn(fmt.Sprintf("%s is not ready ✗", checker.Name()),
 			slog.String("error", err.Error()),
 			slog.Int("attempt", attempt),
+			slog.Duration("next_interval", waitInterval),
 		)
 
 		if maxAttempts > 0 && attempt >= maxAttempts {
 			return fmt.Errorf("%w after %d attempts: %w", ErrMaxAttemptsExceeded, attempt, err)
 		}
 
-		timer.Reset(interval) // Reset starts the timer again
+		timer.Reset(waitInterval) // Reset starts the timer again
 		select {
 		case <-timer.C:
 			// Wait until the timer expires

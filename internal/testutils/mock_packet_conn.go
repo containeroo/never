@@ -12,7 +12,6 @@ type MockProtocol struct {
 	ValidateReplyFunc func(reply []byte, identifier, sequence uint16) error
 	NetworkFunc       func() string
 	ListenPacketFunc  func(ctx context.Context, network, address string) (net.PacketConn, error)
-	SetDeadlineFunc   func(t time.Time) error
 }
 
 // MakeRequest is a mock implementation of the Protocol.MakeRequest method.
@@ -45,14 +44,6 @@ func (m *MockProtocol) ListenPacket(ctx context.Context, network, address string
 		return m.ListenPacketFunc(ctx, network, address)
 	}
 	return nil, nil
-}
-
-// SetDeadline is a mock implementation of the Protocol.SetDeadline method
-func (m *MockProtocol) SetDeadline(t time.Time) error {
-	if m.SetDeadlineFunc != nil {
-		return m.SetDeadlineFunc(t)
-	}
-	return nil
 }
 
 // MockPacketConn is a mock implementation of net.PacketConn for testing purposes.

@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	defaultHTTPTimeout       time.Duration = 1 * time.Second
+	defaultHTTPTimeout       time.Duration = 2 * time.Second
 	defaultHTTPMethod        string        = http.MethodGet
 	defaultHTTPSkipTLSVerify bool          = false
 )

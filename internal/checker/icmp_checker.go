@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	defaultICMPReadTimeout  time.Duration = 1 * time.Second
-	defaultICMPWriteTimeout time.Duration = 1 * time.Second
+	defaultICMPReadTimeout  time.Duration = 2 * time.Second
+	defaultICMPWriteTimeout time.Duration = 2 * time.Second
 )
 
 var icmpSeq uint32
@@ -94,6 +94,19 @@ func newICMPChecker(name, address string, opts ...Option) (*ICMPChecker, error) 
 	checker.protocol = protocol
 
 	return checker, nil
+}
+
+// WithICMPTimeout sets the read and write timeout for the ICMPChecker.
+func WithICMPTimeout(timeout time.Duration) Option {
+	return OptionFunc(func(c Checker) {
+		if timeout <= 0 {
+			return
+		}
+		if icmpChecker, ok := c.(*ICMPChecker); ok {
+			icmpChecker.readTimeout = timeout
+			icmpChecker.writeTimeout = timeout
+		}
+	})
 }
 
 // WithICMPReadTimeout sets the read timeout for the ICMPChecker.

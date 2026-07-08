@@ -28,7 +28,15 @@ func RunAll(ctx context.Context, checkers []factory.CheckerWithInterval, maxAtte
 		name := chk.Checker.Name() // avoid re-calling in error path
 		eg.Go(func() error {
 			attempts := utils.DefaultIfZero(checker.MaxAttempts, maxAttempts)
-			err := wait.WaitUntilReady(ctx, checker.Interval, attempts, checker.Checker, logger)
+			err := wait.WaitUntilReady(
+				ctx,
+				checker.Interval,
+				attempts,
+				checker.Checker,
+				logger,
+				wait.WithBackoff(checker.Backoff),
+				wait.WithMaxInterval(checker.MaxInterval),
+			)
 			if err != nil {
 				return fmt.Errorf("checker '%s' failed: %w", name, err)
 			}

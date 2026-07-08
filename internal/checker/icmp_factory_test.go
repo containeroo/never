@@ -100,29 +100,6 @@ func TestICMPv4_Network(t *testing.T) {
 	})
 }
 
-func TestICMPv4_SetDeadline(t *testing.T) {
-	t.Parallel()
-
-	t.Run("SetDeadline Success", func(t *testing.T) {
-		t.Parallel()
-
-		mockConn := testutils.MockPacketConn{}
-		protocol := &ICMPv4{conn: &mockConn}
-		err := protocol.SetDeadline(time.Now().Add(1 * time.Second))
-
-		require.NoError(t, err)
-	})
-
-	t.Run("SetDeadline Error", func(t *testing.T) {
-		t.Parallel()
-
-		protocol := &ICMPv4{conn: nil}
-		err := protocol.SetDeadline(time.Now().Add(1 * time.Second))
-
-		require.Error(t, err)
-	})
-}
-
 func TestICMPv4_ValidateReply(t *testing.T) {
 	t.Parallel()
 
@@ -312,29 +289,6 @@ func TestICMPv6_Network(t *testing.T) {
 
 		protocol := &ICMPv6{}
 		assert.Equal(t, protocol.Network(), "ip6:ipv6-icmp")
-	})
-}
-
-func TestICMPv6_SetDeadline(t *testing.T) {
-	t.Parallel()
-
-	t.Run("SetDeadline Success", func(t *testing.T) {
-		t.Parallel()
-
-		mockConn := testutils.MockPacketConn{}
-		protocol := &ICMPv6{conn: &mockConn}
-		err := protocol.SetDeadline(time.Now().Add(1 * time.Second))
-
-		require.NoError(t, err)
-	})
-
-	t.Run("SetDeadline Error", func(t *testing.T) {
-		t.Parallel()
-
-		protocol := &ICMPv6{conn: nil}
-		err := protocol.SetDeadline(time.Now().Add(1 * time.Second))
-
-		require.Error(t, err)
 	})
 }
 

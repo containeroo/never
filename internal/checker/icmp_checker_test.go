@@ -224,9 +224,6 @@ func TestICMPCheckerCheckWriteDeadlineError(t *testing.T) {
 		NetworkFunc: func() string {
 			return "ip4:icmp" // nolint:goconst
 		},
-		SetDeadlineFunc: func(t time.Time) error {
-			return fmt.Errorf("mock write deadline error")
-		},
 		ListenPacketFunc: func(ctx context.Context, network, address string) (net.PacketConn, error) {
 			return &testutils.MockPacketConn{
 				WriteToFunc: func(b []byte, addr net.Addr) (int, error) {

@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/containeroo/never/internal/backoff"
 	"github.com/containeroo/never/internal/factory"
 	"github.com/containeroo/tinyflags"
 	"github.com/stretchr/testify/assert"
@@ -143,6 +144,38 @@ func TestBuildCheckers(t *testing.T) {
 		assert.Len(t, checkers, 1)
 	})
 
+	t.Run("Valid Backoff Settings", func(t *testing.T) {
+		t.Parallel()
+
+		tf := tinyflags.NewFlagSet("test.exe", tinyflags.ContinueOnError)
+		httpGroup := tf.DynamicGroup("http")
+		httpGroup.String("name", "", "Name of the HTTP checker")
+		httpGroup.String("method", "GET", "HTTP method to use")
+		httpGroup.String("address", "", "HTTP target URL")
+		httpGroup.Duration("interval", 1*time.Second, "Time between HTTP requests")
+		httpGroup.StringSlice("header", nil, "HTTP headers to send")
+		httpGroup.Bool("allow-duplicate-headers", true, "Allow duplicate HTTP headers")
+		httpGroup.StringSlice("expected-status-codes", []string{"200"}, "Expected HTTP status codes")
+		httpGroup.Bool("skip-tls-verify", true, "Skip TLS verification")
+		httpGroup.Duration("timeout", 2*time.Second, "Timeout")
+		tinyflags.DynamicEnum(httpGroup, "backoff", backoff.ModeNone, "Retry backoff mode", backoff.ModeNone, backoff.ModeExponential)
+		httpGroup.Duration("max-interval", 0*time.Second, "Maximum retry interval")
+
+		args := []string{
+			"--http.mygroup.address=http://example.com",
+			"--http.mygroup.backoff=exponential",
+			"--http.mygroup.max-interval=30s",
+		}
+		err := tf.Parse(args)
+		require.NoError(t, err)
+
+		checkers, err := factory.BuildCheckers(tf.DynamicGroups(), 2*time.Second)
+		require.NoError(t, err)
+		require.Len(t, checkers, 1)
+		assert.Equal(t, backoff.ModeExponential, checkers[0].Backoff)
+		assert.Equal(t, 30*time.Second, checkers[0].MaxInterval)
+	})
+
 	t.Run("Valid TCP Checker", func(t *testing.T) {
 		t.Parallel()
 
@@ -172,8 +205,9 @@ func TestBuildCheckers(t *testing.T) {
 		icmpGroup := tf.DynamicGroup("icmp")
 		icmpGroup.String("name", "", "Name of the ICMP checker. Defaults to <ID>.")
 		icmpGroup.String("address", "8.8.8.8", "ICMP target address")
-		icmpGroup.Duration("read-timeout", 2*time.Second, "Read timeout")
-		icmpGroup.Duration("write-timeout", 2*time.Second, "Write timeout")
+		icmpGroup.Duration("timeout", 2*time.Second, "Timeout")
+		icmpGroup.Duration("read-timeout", 0*time.Second, "Read timeout override")
+		icmpGroup.Duration("write-timeout", 0*time.Second, "Write timeout override")
 
 		args := []string{
 			"--icmp.mygroup.address=8.8.8.8",
@@ -196,8 +230,9 @@ func TestBuildCheckers(t *testing.T) {
 		icmpGroup := tf.DynamicGroup("icmp")
 		icmpGroup.String("name", "", "Name of the TCP checker. Defaults to <ID>.")
 		icmpGroup.String("address", "8.8.8.8", "ICMP target address")
-		icmpGroup.Duration("read-timeout", 2*time.Second, "Read timeout")
-		icmpGroup.Duration("write-timeout", 2*time.Second, "Write timeout")
+		icmpGroup.Duration("timeout", 2*time.Second, "Timeout")
+		icmpGroup.Duration("read-timeout", 0*time.Second, "Read timeout override")
+		icmpGroup.Duration("write-timeout", 0*time.Second, "Write timeout override")
 
 		args := []string{
 			"--icmp.mygroup.address=://invalid-url",

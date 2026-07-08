@@ -28,7 +28,7 @@ func Run(ctx context.Context, version string, args []string, stdOut, stdErr io.W
 	}
 
 	// Setup logger immediately so startup errors are correctly logged.
-	logger := logging.SetupLogger(version, stdOut)
+	logger := logging.SetupLogger(version, stdOut, logging.Config{Format: flags.LogFormat})
 
 	// Initialize target checkers
 	checkers, err := factory.BuildCheckers(flags.DynamicGroups, flags.DefaultCheckInterval)

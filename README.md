@@ -35,6 +35,7 @@ Whether you're waiting on a `port`, `ping`, or a `200 OK`, `N.E.V.E.R.` backs do
 | -------------------- | -------- | ------- | ------------------------------------------------------------------- |
 | `--default-interval` | duration | `2s`    | Default interval between checks. Can be overridden for each target. |
 | `--max-attempts`     | int      | `-1`    | Maximum attempts before giving up. Use `-1` to retry endlessly.     |
+| `--log-format`      | enum     | `text`  | Log output format: `text` or `json`.                               |
 | `--version`          | bool     | `false` | Show version and exit.                                              |
 | `--help`, `-h`       | bool     | `false` | Show help.                                                          |
 
@@ -59,11 +60,17 @@ Types are: `http`, `icmp` or `tcp`.
 - **`--http.<IDENTIFIER>.max-attempts`** = `int`
   Maximum attempts before giving up. Defaults to `--max-attempts` when unset or `0`.
 
-- **`--http.<IDENTIFIER>.method`** = `string`
-  The HTTP method to use (e.g., `GET`, `POST`). Defaults to `GET`.
+- **`--http.<IDENTIFIER>.backoff`** = `enum`
+  Retry backoff mode. Allowed values: `none`, `exponential`. Defaults to `none`.
+
+- **`--http.<IDENTIFIER>.max-interval`** = `duration`
+  Maximum retry interval when backoff increases the delay. Defaults to uncapped when unset or `0`.
+
+- **`--http.<IDENTIFIER>.method`** = `enum`
+  The HTTP method to use. Allowed values: `GET`, `HEAD`, `POST`, `PUT`, `PATCH`, `DELETE`, `CONNECT`, `OPTIONS`, `TRACE`. Defaults to `GET`.
 
 - **`--http.<IDENTIFIER>.header`** = `string`
-  A HTTP header in `key=value` format. Can be specified multiple times.
+  An HTTP header in `key=value` format. Can be specified multiple times.
   **Example:** `Authorization=Bearer token`
   **Resolvable:** See [Resolving Variables](#resolving-variables) below.
 
@@ -77,7 +84,7 @@ Types are: `http`, `icmp` or `tcp`.
   Whether to skip TLS verification. Defaults to `false`.
 
 - **`--http.<IDENTIFIER>.timeout`** = `duration`
-  The timeout for the HTTP request (e.g., `5s`). Defaults to `1s`.
+  The timeout for the HTTP request (e.g., `5s`). Defaults to `2s`.
 
 #### ICMP Flags
 
@@ -94,11 +101,20 @@ Types are: `http`, `icmp` or `tcp`.
 - **`--icmp.<IDENTIFIER>.max-attempts`** = `int`
   Maximum attempts before giving up. Defaults to `--max-attempts` when unset or `0`.
 
+- **`--icmp.<IDENTIFIER>.backoff`** = `enum`
+  Retry backoff mode. Allowed values: `none`, `exponential`. Defaults to `none`.
+
+- **`--icmp.<IDENTIFIER>.max-interval`** = `duration`
+  Maximum retry interval when backoff increases the delay. Defaults to uncapped when unset or `0`.
+
+- **`--icmp.<IDENTIFIER>.timeout`** = `duration`
+  The timeout for ICMP read and write operations (e.g., `2s`). Defaults to `2s`.
+
 - **`--icmp.<IDENTIFIER>.read-timeout`** = `duration`
-  The read timeout for the ICMP connection (e.g., `1s`). Defaults to `1s`.
+  Advanced override for the ICMP read timeout (e.g., `1s`). Defaults to `--icmp.<IDENTIFIER>.timeout` when unset or `0`.
 
 - **`--icmp.<IDENTIFIER>.write-timeout`** = `duration`
-  The write timeout for the ICMP connection (e.g., `1s`).Defaults to `1s`.
+  Advanced override for the ICMP write timeout (e.g., `1s`). Defaults to `--icmp.<IDENTIFIER>.timeout` when unset or `0`.
 
 #### TCP Flags
 
@@ -115,6 +131,15 @@ Types are: `http`, `icmp` or `tcp`.
 - **`--tcp.<IDENTIFIER>.max-attempts`** = `int`
   Maximum attempts before giving up. Defaults to `--max-attempts` when unset or `0`.
 
+- **`--tcp.<IDENTIFIER>.backoff`** = `enum`
+  Retry backoff mode. Allowed values: `none`, `exponential`. Defaults to `none`.
+
+- **`--tcp.<IDENTIFIER>.max-interval`** = `duration`
+  Maximum retry interval when backoff increases the delay. Defaults to uncapped when unset or `0`.
+
+- **`--tcp.<IDENTIFIER>.timeout`** = `duration`
+  The timeout for the TCP connection attempt (e.g., `5s`). Defaults to `2s`.
+
 #### Resolving variables
 
 Each `address` field can be resolved using `environment variables`, `files`, `JSON`, `YAML`, and `INI` files.
@@ -126,7 +151,7 @@ Each `address` field can be resolved using `environment variables`, `files`, `JS
 - `json`: – Resolves values from a JSON file. Supports dot notation for nested keys.
   Example: `json:/config/app.json//database.host` returns `host` field under `database` in `app.json`. It is also possible to indexing into arrays (e.g., `json:/config/app.json//servers.0.host`).
 - `yaml`: – Resolves values from a YAML file. Supports dot notation for nested keys.
-  Example: `yaml:/config/app.yaml//server.port` returns `port` under `server` in `app.yaml`.It is also possible to indexing into arrays (e.g., `yaml:/config/app.yaml//servers.0.host`).
+  Example: `yaml:/config/app.yaml//server.port` returns `port` under `server` in `app.yaml`. It is also possible to index into arrays (e.g., `yaml:/config/app.yaml//servers.0.host`).
 - `ini`: – Resolves values from an INI file. Can specify a section and key, or just a key in the default section.
   Example: `ini:/config/app.ini//Section.Key` returns the value of `Key` under `Section`.
 - No prefix – Returns the value as-is, unchanged.
@@ -154,6 +179,8 @@ never \
 never \
   --http.web.address=http://example.com:80 \
   --tcp.db.address=localhost:5432 \
+  --tcp.db.backoff=exponential \
+  --tcp.db.max-interval=30s \
   --default-interval=10s
 ```
 
@@ -213,9 +240,9 @@ Example:
 ```yaml
 - name: wait-for-host
   image: ghcr.io/containeroo/never:latest
-  env:
-    - name: TARGET_ADDRESS
-      value: icmp://hostname.domain.com
+  args:
+    - --icmp.host.address=hostname.domain.com
+    - --icmp.host.timeout=2s
   securityContext:
     readOnlyRootFilesystem: true
     allowPrivilegeEscalation: false
@@ -306,7 +333,7 @@ flowchart TD;
         subgraph RetryLoop[Retry Loop]
             subgraph InnerLoop[ ]
                 direction TB
-                sendRequest --> checkTimeout{Answers within timeouts <font color=orange>DIAL_TIMEOUT</font>/<font color=orange>ICMP_READ_TIMEOUT</font>?};
+                sendRequest --> checkTimeout{Answers within <font color=orange>ICMP_TIMEOUT</font>?};
 
                 checkTimeout -->|Connection successful| targetReady[Target is ready];
                 checkTimeout -->|Connection failed| waitRetry[Wait for retry <font color=orange>CHECK_INTERVAL</font>];

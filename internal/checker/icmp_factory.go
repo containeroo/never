@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net"
-	"time"
 
 	"golang.org/x/net/icmp"
 	"golang.org/x/net/ipv4"
@@ -30,9 +29,6 @@ type Protocol interface {
 	// ListenPacket sets up a listener for ICMP packets on the specified network and address, using the provided context.
 	// Returns a net.PacketConn for reading and writing packets, or an error if the listener cannot be established.
 	ListenPacket(ctx context.Context, network, address string) (net.PacketConn, error)
-	// SetDeadline sets the read and write deadlines for the packet connection, affecting any I/O operations on the connection.
-	// Returns an error if setting the deadline fails.
-	SetDeadline(t time.Time) error
 }
 
 // newProtocol initializes a protocol based on the given address.
@@ -108,14 +104,6 @@ func (p *ICMPv4) ListenPacket(ctx context.Context, network, address string) (net
 	return conn, nil
 }
 
-// SetDeadline sets the read and write deadlines associated with the connection. It is equivalent to calling both SetReadDeadline and SetWriteDeadline.
-func (p *ICMPv4) SetDeadline(t time.Time) error {
-	if p.conn == nil {
-		return fmt.Errorf("connection not initialized")
-	}
-	return p.conn.SetDeadline(t)
-}
-
 // ICMPv6 implements the Protocol interface for IPv6 ICMP.
 type ICMPv6 struct {
 	conn net.PacketConn
@@ -168,12 +156,4 @@ func (p *ICMPv6) ListenPacket(ctx context.Context, network, address string) (net
 	}
 	p.conn = conn
 	return p.conn, nil
-}
-
-// SetDeadline sets the read and write deadlines associated with the connection. It is equivalent to calling both SetReadDeadline and SetWriteDeadline.
-func (p *ICMPv6) SetDeadline(t time.Time) error {
-	if p.conn == nil {
-		return fmt.Errorf("connection not initialized")
-	}
-	return p.conn.SetDeadline(t)
 }
