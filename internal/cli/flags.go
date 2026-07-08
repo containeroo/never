@@ -31,10 +31,13 @@ func ParseFlags(args []string, version string) (*Config, error) {
 
 	tf := tinyflags.NewFlagSet("never", tinyflags.ContinueOnError)
 	tf.Version(version)
+	tf.EnvPrefix("NEVER__")
+	tf.HideEnvs()
 	tf.SortedFlags()
 	tf.SortedGroups()
 
-	tf.Note("\nFor more information, see https://github.com/containeroo/never")
+	tf.Note("\nFlags can also be set through environment variables with the NEVER__ prefix. " +
+		"For example, --default-interval becomes NEVER__DEFAULT_INTERVAL and --http.web.address becomes NEVER__HTTP_WEB_ADDRESS.")
 
 	registerAppFlags(tf, &cfg)
 	registerHTTPFlags(tf)

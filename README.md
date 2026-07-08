@@ -17,13 +17,48 @@ Designed to run as a **Kubernetes `initContainer`**, `N.E.V.E.R.` ensures your s
 
 ## Features
 
-- Continuously retries until the target responds — no backoff, no shame.
+- Continuously retries until the target responds.
 - Supports multiple concurrent targets, each with its own config.
-- Configurable entirely via command-line arguments.
+- Configurable via command-line flags or environment variables.
+- Supports `HTTP`, `TCP`, and `ICMP` readiness checks.
+- Supports per-target retry backoff and max attempts.
 - Exits with `0` the moment everything is ready.
 - Exits with `1` if any target exceeds `--max-attempts`.
 
 Whether you're waiting on a `port`, `ping`, or a `200 OK`, `N.E.V.E.R.` backs down never.
+
+## Configuration
+
+Flags can also be set through environment variables.
+
+The environment variable prefix is:
+
+```text
+NEVER__
+```
+
+Two underscores are used intentionally to avoid overlapping with common Kubernetes-style names such as `*_SVC`, `*_PORT`, or similar service-discovery variables.
+
+Flag names are converted to environment variables by:
+
+- removing the leading `--`
+- replacing dots and hyphens with underscores
+- uppercasing the name
+- prefixing it with `NEVER__`
+
+Examples:
+
+| Flag                               | Environment variable                    |
+| ---------------------------------- | --------------------------------------- |
+| `--default-interval`               | `NEVER__DEFAULT_INTERVAL`               |
+| `--max-attempts`                   | `NEVER__MAX_ATTEMPTS`                   |
+| `--log-format`                     | `NEVER__LOG_FORMAT`                     |
+| `--http.web.address`               | `NEVER__HTTP_WEB_ADDRESS`               |
+| `--http.web.expected-status-codes` | `NEVER__HTTP_WEB_EXPECTED_STATUS_CODES` |
+| `--tcp.db.timeout`                 | `NEVER__TCP_DB_TIMEOUT`                 |
+| `--icmp.host.timeout`              | `NEVER__ICMP_HOST_TIMEOUT`              |
+
+Command-line flags take precedence over environment variables.
 
 ## Command-Line Flags
 
@@ -31,154 +66,211 @@ Whether you're waiting on a `port`, `ping`, or a `200 OK`, `N.E.V.E.R.` backs do
 
 ### Common Flags
 
-| Flag                 | Type     | Default | Description                                                         |
-| -------------------- | -------- | ------- | ------------------------------------------------------------------- |
-| `--default-interval` | duration | `2s`    | Default interval between checks. Can be overridden for each target. |
-| `--max-attempts`     | int      | `-1`    | Maximum attempts before giving up. Use `-1` to retry endlessly.     |
-<<<<<<< HEAD
-| `--log-format`      | enum     | `text`  | Log output format: `text` or `json`.                               |
-=======
-| `--log-format`       | enum     | `text`  | Log output format: `text` or `json`.                                |
-| `--log-level`        | enum     | `info`  | Minimum log level: `debug`, `info`, `warn` or `error`.              |
->>>>>>> 02e81ff (refactor: move CLI flags to internal/cli)
-| `--version`          | bool     | `false` | Show version and exit.                                              |
-| `--help`, `-h`       | bool     | `false` | Show help.                                                          |
+| Flag                 | Env var                   | Type     | Default | Description                                                         |
+| -------------------- | ------------------------- | -------- | ------- | ------------------------------------------------------------------- |
+| `--default-interval` | `NEVER__DEFAULT_INTERVAL` | duration | `2s`    | Default interval between checks. Can be overridden for each target. |
+| `--max-attempts`     | `NEVER__MAX_ATTEMPTS`     | int      | `-1`    | Maximum attempts before giving up. Use `-1` to retry endlessly.     |
+| `--log-format`       | `NEVER__LOG_FORMAT`       | enum     | `json`  | Log output format: `json` or `text`.                                |
+| `--version`          |                           | bool     | `false` | Show version and exit.                                              |
+| `--help`, `-h`       |                           | bool     | `false` | Show help.                                                          |
 
 ### Target Flags
 
-`never` accepts "dynamic" flags that can be defined in the startup arguments.
-Use the `--<TYPE>.<IDENTIFIER>.<PROPERTY>=<VALUE>` format to define targets.
-Types are: `http`, `icmp` or `tcp`.
+`never` accepts dynamic flags that can be defined in startup arguments or environment variables.
 
-#### HTTP-Flags
+Use the following flag format:
+
+```text
+--<TYPE>.<IDENTIFIER>.<PROPERTY>=<VALUE>
+```
+
+Use the following environment variable format:
+
+```text
+NEVER__<TYPE>_<IDENTIFIER>_<PROPERTY>=<VALUE>
+```
+
+Types are:
+
+- `http`
+- `icmp`
+- `tcp`
+
+Examples:
+
+```text
+--http.web.address=http://example.com
+NEVER__HTTP_WEB_ADDRESS=http://example.com
+```
+
+```text
+--tcp.db.address=postgres.default.svc.cluster.local:5432
+NEVER__TCP_DB_ADDRESS=postgres.default.svc.cluster.local:5432
+```
+
+```text
+--icmp.host.address=example.com
+NEVER__ICMP_HOST_ADDRESS=example.com
+```
+
+#### HTTP Flags
 
 - **`--http.<IDENTIFIER>.name`** = `string`
+  Env: `NEVER__HTTP_<IDENTIFIER>_NAME`
   The name of the target. If not specified, it uses the `<IDENTIFIER>` as the name.
 
 - **`--http.<IDENTIFIER>.address`** = `string`
-  The target's address.
+  Env: `NEVER__HTTP_<IDENTIFIER>_ADDRESS`
+  The target URL.
   **Resolvable:** See [Resolving Variables](#resolving-variables) below.
 
 - **`--http.<IDENTIFIER>.interval`** = `duration`
-  The interval between HTTP requests (e.g., `1s`). Overwrites the global `--default-interval`.
+  Env: `NEVER__HTTP_<IDENTIFIER>_INTERVAL`
+  The interval between HTTP requests. Defaults to `--default-interval` when unset or `0`.
 
 - **`--http.<IDENTIFIER>.max-attempts`** = `int`
+  Env: `NEVER__HTTP_<IDENTIFIER>_MAX_ATTEMPTS`
   Maximum attempts before giving up. Defaults to `--max-attempts` when unset or `0`.
 
-- **`--http.<IDENTIFIER>.method`** = `enum`
-  The HTTP method to use. Allowed values: `GET`, `HEAD`, `POST`, `PUT`, `PATCH`, `DELETE`, `CONNECT`, `OPTIONS`, `TRACE`. Defaults to `GET`.
-
 - **`--http.<IDENTIFIER>.backoff`** = `enum`
-  Retry backoff mode. Allowed values: `none`, `exponential`. Defaults to `none`.
+  Env: `NEVER__HTTP_<IDENTIFIER>_BACKOFF`
+  Retry backoff mode. Allowed values: `linear`, `exponential`. Defaults to `linear`.
 
 - **`--http.<IDENTIFIER>.max-interval`** = `duration`
+  Env: `NEVER__HTTP_<IDENTIFIER>_MAX_INTERVAL`
   Maximum retry interval when backoff increases the delay. Defaults to uncapped when unset or `0`.
 
 - **`--http.<IDENTIFIER>.method`** = `enum`
+  Env: `NEVER__HTTP_<IDENTIFIER>_METHOD`
   The HTTP method to use. Allowed values: `GET`, `HEAD`, `POST`, `PUT`, `PATCH`, `DELETE`, `CONNECT`, `OPTIONS`, `TRACE`. Defaults to `GET`.
 
 - **`--http.<IDENTIFIER>.header`** = `string`
-  An HTTP header in `key=value` format. Can be specified multiple times.
+  Env: `NEVER__HTTP_<IDENTIFIER>_HEADER`
+  An HTTP header in `key=value` format. Can be specified multiple times as a flag.
   **Example:** `Authorization=Bearer token`
   **Resolvable:** See [Resolving Variables](#resolving-variables) below.
 
 - **`--http.<IDENTIFIER>.allow-duplicate-headers`** = `bool`
+  Env: `NEVER__HTTP_<IDENTIFIER>_ALLOW_DUPLICATE_HEADERS`
   Allow duplicate headers. Defaults to `false`.
 
 - **`--http.<IDENTIFIER>.expected-status-codes`** = `string`
-  A comma-separated list of expected HTTP status codes or ranges (e.g., `200,301-302`). Defaults to `200`.
+  Env: `NEVER__HTTP_<IDENTIFIER>_EXPECTED_STATUS_CODES`
+  A comma-separated list of expected HTTP status codes or ranges. Defaults to `200`.
+  **Example:** `200,204,301-302`
 
 - **`--http.<IDENTIFIER>.skip-tls-verify`** = `bool`
+  Env: `NEVER__HTTP_<IDENTIFIER>_SKIP_TLS_VERIFY`
   Whether to skip TLS verification. Defaults to `false`.
 
 - **`--http.<IDENTIFIER>.timeout`** = `duration`
-  The timeout for the HTTP request (e.g., `5s`). Defaults to `2s`.
+  Env: `NEVER__HTTP_<IDENTIFIER>_TIMEOUT`
+  The timeout for the HTTP request. Defaults to `2s`.
 
 #### ICMP Flags
 
 - **`--icmp.<IDENTIFIER>.name`** = `string`
+  Env: `NEVER__ICMP_<IDENTIFIER>_NAME`
   The name of the target. If not specified, it uses the `<IDENTIFIER>` as the name.
 
 - **`--icmp.<IDENTIFIER>.address`** = `string`
-  The target's address.
+  Env: `NEVER__ICMP_<IDENTIFIER>_ADDRESS`
+  The target address.
   **Resolvable:** See [Resolving Variables](#resolving-variables) below.
 
 - **`--icmp.<IDENTIFIER>.interval`** = `duration`
-  The interval between ICMP requests (e.g., `1s`). Overwrites the global `--default-interval`.
+  Env: `NEVER__ICMP_<IDENTIFIER>_INTERVAL`
+  The interval between ICMP requests. Defaults to `--default-interval` when unset or `0`.
 
 - **`--icmp.<IDENTIFIER>.max-attempts`** = `int`
+  Env: `NEVER__ICMP_<IDENTIFIER>_MAX_ATTEMPTS`
   Maximum attempts before giving up. Defaults to `--max-attempts` when unset or `0`.
 
 - **`--icmp.<IDENTIFIER>.backoff`** = `enum`
-  Retry backoff mode. Allowed values: `none`, `exponential`. Defaults to `none`.
+  Env: `NEVER__ICMP_<IDENTIFIER>_BACKOFF`
+  Retry backoff mode. Allowed values: `linear`, `exponential`. Defaults to `linear`.
 
 - **`--icmp.<IDENTIFIER>.max-interval`** = `duration`
+  Env: `NEVER__ICMP_<IDENTIFIER>_MAX_INTERVAL`
   Maximum retry interval when backoff increases the delay. Defaults to uncapped when unset or `0`.
 
 - **`--icmp.<IDENTIFIER>.timeout`** = `duration`
-  The timeout for ICMP read and write operations (e.g., `2s`). Defaults to `2s`.
+  Env: `NEVER__ICMP_<IDENTIFIER>_TIMEOUT`
+  Timeout for ICMP read and write operations. Defaults to `2s`.
 
 - **`--icmp.<IDENTIFIER>.read-timeout`** = `duration`
-  The read timeout for the ICMP connection (e.g., `1s`). Defaults to `2s`.
+  Env: `NEVER__ICMP_<IDENTIFIER>_READ_TIMEOUT`
+  Advanced override for the ICMP read timeout. Defaults to `--icmp.<IDENTIFIER>.timeout` when unset or `0`.
 
 - **`--icmp.<IDENTIFIER>.write-timeout`** = `duration`
-<<<<<<< HEAD
-  Advanced override for the ICMP read timeout (e.g., `1s`). Defaults to `--icmp.<IDENTIFIER>.timeout` when unset or `0`.
-
-- **`--icmp.<IDENTIFIER>.write-timeout`** = `duration`
-  Advanced override for the ICMP write timeout (e.g., `1s`). Defaults to `--icmp.<IDENTIFIER>.timeout` when unset or `0`.
-=======
-  The write timeout for the ICMP connection (e.g., `1s`). Defaults to `2s`.
->>>>>>> cadd9b5 (docs: align README with current flags)
+  Env: `NEVER__ICMP_<IDENTIFIER>_WRITE_TIMEOUT`
+  Advanced override for the ICMP write timeout. Defaults to `--icmp.<IDENTIFIER>.timeout` when unset or `0`.
 
 #### TCP Flags
 
 - **`--tcp.<IDENTIFIER>.name`** = `string`
+  Env: `NEVER__TCP_<IDENTIFIER>_NAME`
   The name of the target. If not specified, it uses the `<IDENTIFIER>` as the name.
 
 - **`--tcp.<IDENTIFIER>.address`** = `string`
-  The target's address.
+  Env: `NEVER__TCP_<IDENTIFIER>_ADDRESS`
+  The target address in `host:port` format.
   **Resolvable:** See [Resolving Variables](#resolving-variables) below.
 
+- **`--tcp.<IDENTIFIER>.timeout`** = `duration`
+  Env: `NEVER__TCP_<IDENTIFIER>_TIMEOUT`
+  The timeout for the TCP connection attempt. Defaults to `2s`.
+
 - **`--tcp.<IDENTIFIER>.interval`** = `duration`
-  The interval between TCP requests (e.g., `1s`). Overwrites the global `--default-interval`.
+  Env: `NEVER__TCP_<IDENTIFIER>_INTERVAL`
+  The interval between TCP requests. Defaults to `--default-interval` when unset or `0`.
 
 - **`--tcp.<IDENTIFIER>.max-attempts`** = `int`
+  Env: `NEVER__TCP_<IDENTIFIER>_MAX_ATTEMPTS`
   Maximum attempts before giving up. Defaults to `--max-attempts` when unset or `0`.
 
-<<<<<<< HEAD
 - **`--tcp.<IDENTIFIER>.backoff`** = `enum`
-  Retry backoff mode. Allowed values: `none`, `exponential`. Defaults to `none`.
+  Env: `NEVER__TCP_<IDENTIFIER>_BACKOFF`
+  Retry backoff mode. Allowed values: `linear`, `exponential`. Defaults to `linear`.
 
 - **`--tcp.<IDENTIFIER>.max-interval`** = `duration`
+  Env: `NEVER__TCP_<IDENTIFIER>_MAX_INTERVAL`
   Maximum retry interval when backoff increases the delay. Defaults to uncapped when unset or `0`.
 
-=======
->>>>>>> cadd9b5 (docs: align README with current flags)
-- **`--tcp.<IDENTIFIER>.timeout`** = `duration`
-  The timeout for the TCP connection attempt (e.g., `5s`). Defaults to `2s`.
+## Resolving Variables
 
-#### Resolving variables
+Some values, such as target addresses and HTTP header values, can be resolved using environment variables, files, JSON, YAML, and INI files.
 
-Each `address` field can be resolved using `environment variables`, `files`, `JSON`, `YAML`, and `INI` files.
+This is separate from `NEVER__...` flag environment variables.
 
-- `env`: – Resolves environment variables.
+- `env:` resolves environment variables.
   Example: `env:PATH` returns the value of the `PATH` environment variable.
-- `file`: – Resolves values from a simple key-value file.
+
+- `file:` resolves values from a simple key-value file.
   Example: `file:/config/app.txt//KeyName` returns the value associated with `KeyName` in `app.txt`.
-- `json`: – Resolves values from a JSON file. Supports dot notation for nested keys.
-  Example: `json:/config/app.json//database.host` returns `host` field under `database` in `app.json`. It is also possible to indexing into arrays (e.g., `json:/config/app.json//servers.0.host`).
-- `yaml`: – Resolves values from a YAML file. Supports dot notation for nested keys.
-  Example: `yaml:/config/app.yaml//server.port` returns `port` under `server` in `app.yaml`. It is also possible to index into arrays (e.g., `yaml:/config/app.yaml//servers.0.host`).
-- `ini`: – Resolves values from an INI file. Can specify a section and key, or just a key in the default section.
+
+- `json:` resolves values from a JSON file. Supports dot notation for nested keys.
+  Example: `json:/config/app.json//database.host` returns the `host` field under `database`.
+
+- `yaml:` resolves values from a YAML file. Supports dot notation for nested keys.
+  Example: `yaml:/config/app.yaml//server.port` returns `port` under `server`.
+
+- `ini:` resolves values from an INI file. Can specify a section and key, or just a key in the default section.
   Example: `ini:/config/app.ini//Section.Key` returns the value of `Key` under `Section`.
-- No prefix – Returns the value as-is, unchanged.
 
-HTTP headers values can also be resolved using the same mechanism, (from a environment variable `--http.<IDENTIFIER>.header="header=env:SECRET_HEADER"` or from a file `--http.<IDENTIFIER>.header="header=file:PATH_TO_FILE"`).
+- No prefix returns the value as-is.
 
-### Examples
+HTTP header values can also be resolved using the same mechanism:
 
-#### Define an HTTP Target
+```sh
+never \
+  --http.web.address=http://example.com \
+  --http.web.header="Authorization=env:SECRET_HEADER"
+```
+
+## Examples
+
+### Define an HTTP Target with Flags
 
 ```sh
 never \
@@ -191,7 +283,19 @@ never \
   --default-interval=5s
 ```
 
-#### Define Multiple Targets (HTTP and TCP) Running in Parallel
+### Define an HTTP Target with Environment Variables
+
+```sh
+NEVER__DEFAULT_INTERVAL=5s \
+NEVER__HTTP_WEB_ADDRESS=http://example.com:80 \
+NEVER__HTTP_WEB_METHOD=GET \
+NEVER__HTTP_WEB_EXPECTED_STATUS_CODES=200,204 \
+NEVER__HTTP_WEB_HEADER="Authorization=Bearer token" \
+NEVER__HTTP_WEB_SKIP_TLS_VERIFY=false \
+never
+```
+
+### Define Multiple Targets Running in Parallel
 
 ```sh
 never \
@@ -199,12 +303,25 @@ never \
   --tcp.db.address=localhost:5432 \
   --tcp.db.backoff=exponential \
   --tcp.db.max-interval=30s \
+  --icmp.host.address=example.com \
   --default-interval=10s
 ```
 
-#### Notes
+### Define Multiple Targets with Environment Variables
 
-**Proxy Settings**: Proxy configurations (`HTTP_PROXY`, `HTTPS_PROXY`, `NO_PROXY`) are managed via environment variables.
+```sh
+NEVER__DEFAULT_INTERVAL=10s \
+NEVER__HTTP_WEB_ADDRESS=http://example.com:80 \
+NEVER__TCP_DB_ADDRESS=localhost:5432 \
+NEVER__TCP_DB_BACKOFF=exponential \
+NEVER__TCP_DB_MAX_INTERVAL=30s \
+NEVER__ICMP_HOST_ADDRESS=example.com \
+never
+```
+
+## Notes
+
+**Proxy Settings**: Proxy configurations (`HTTP_PROXY`, `HTTPS_PROXY`, `NO_PROXY`) are managed via standard environment variables used by Go's HTTP client.
 
 ## Behavior Flowchart
 
@@ -236,8 +353,8 @@ graph TD;
         end
 
         targetReady --> processEnd((End));
+        class targetReady green;
         class processEnd violet;
-        waitRetry --> processEnd;
     end
 
     programTerminated[Program terminated or canceled] --> processEnd;
@@ -248,35 +365,6 @@ graph TD;
 ```
 
 </details>
-
-## Permissions
-
-**Only** when using `ICMP` checks in Kubernetes, it's important to ensure that the container has the necessary permissions to send ICMP packets. It is necessary to add the `CAP_NET_RAW` capability to the container's security context.
-
-Example:
-
-```yaml
-- name: wait-for-host
-  image: ghcr.io/containeroo/never:latest
-<<<<<<< HEAD
-  env:
-    - name: TARGET_ADDRESS
-      value: icmp://hostname.domain.com
-  args:
-    - --icmp.host.address=hostname.domain.com
-    - --icmp.host.timeout=2s
-=======
-  args:
-    - --icmp.host.address=hostname.domain.com
->>>>>>> cadd9b5 (docs: align README with current flags)
-  securityContext:
-    readOnlyRootFilesystem: true
-    allowPrivilegeEscalation: false
-    capabilities:
-      add: ["CAP_NET_RAW"]
-```
-
-For `TCP` and `HTTP` checks, the container does not require any additional permissions.
 
 ### HTTP Check
 
@@ -296,7 +384,7 @@ flowchart TD;
     subgraph MainFlow[ ]
         direction TB
         processStart((Start)) --> createRequest[Create HTTP request for <font color=orange>TARGET_ADDRESS</font>];
-        class start processStart;
+        class processStart violet;
 
         createRequest --> addHeaders[Add headers from <font color=orange>HTTP_HEADERS</font>];
         addHeaders --> addSkipTLS[Add skip TLS verify if <font color=orange>HTTP_SKIP_TLS_VERIFY</font> is set];
@@ -305,31 +393,35 @@ flowchart TD;
         subgraph RetryLoop[Retry Loop]
             subgraph InnerLoop[ ]
                 direction TB
-                sendRequest --> checkTimeout{Answers within <font color=orange>DIAL_TIMEOUT</font>?};
+                sendRequest --> checkTimeout{Answers within <font color=orange>HTTP_TIMEOUT</font>?};
                 class checkTimeout decision;
+
                 checkTimeout -->|Yes| checkStatusCode[Check response status code <font color=orange>HTTP_EXPECTED_STATUS_CODES</font>];
+                checkTimeout -->|No| targetNotReady[Target is not ready];
+
                 checkStatusCode --> statusMatch{Matches?};
                 class statusMatch decision;
 
                 statusMatch -->|Yes| targetReady[Target is ready];
-                class targetReady success;
+                statusMatch -->|No| targetNotReady;
 
-                statusMatch -->|No| targetNotReady[Target is not ready];
+                class targetReady green;
                 class targetNotReady error;
+
                 targetNotReady --> waitRetry[Wait for retry <font color=orange>CHECK_INTERVAL</font>];
                 waitRetry --> sendRequest;
             end
         end
 
-    targetReady --> processEnd((End));
-    class processEnd violet;
+        targetReady --> processEnd((End));
+        class processEnd violet;
     end
 
     programTerminated[Program terminated or canceled] --> processEnd;
     class programTerminated error;
 
-class processStart,createRequest,addHeaders,addSkipTLS,sendRequest,checkTimeout,checkStatusCode,statusMatch,targetReady,targetNotReady,waitRetry,programTerminated,processEnd,MainFlow,RetryLoop noFill;
-class MainFlow,RetryLoop transparent;
+    class processStart,createRequest,addHeaders,addSkipTLS,sendRequest,checkTimeout,checkStatusCode,statusMatch,targetReady,targetNotReady,waitRetry,programTerminated,processEnd,MainFlow,RetryLoop noFill;
+    class MainFlow,RetryLoop transparent;
 ```
 
 </details>
@@ -352,7 +444,7 @@ flowchart TD;
     subgraph MainFlow[ ]
         direction TB
         processStart((Start)) --> createRequest[Create ICMP request for <font color=orange>TARGET_ADDRESS</font>];
-        class start processStart;
+        class processStart violet;
 
         createRequest --> sendRequest[Send ICMP request];
 
@@ -360,30 +452,56 @@ flowchart TD;
             subgraph InnerLoop[ ]
                 direction TB
                 sendRequest --> checkTimeout{Answers within <font color=orange>ICMP_TIMEOUT</font>?};
+                class checkTimeout decision;
 
                 checkTimeout -->|Connection successful| targetReady[Target is ready];
                 checkTimeout -->|Connection failed| waitRetry[Wait for retry <font color=orange>CHECK_INTERVAL</font>];
-                waitRetry --> sendRequest;
 
+                class targetReady green;
+
+                waitRetry --> sendRequest;
             end
         end
 
-    targetReady --> processEnd((End));
-    class processEnd violet;
+        targetReady --> processEnd((End));
+        class processEnd violet;
     end
 
     programTerminated[Program terminated or canceled] --> processEnd;
     class programTerminated error;
 
-class processStart,createRequest,sendRequest,checkTimeout,targetReady,waitRetry,processEnd,MainFlow,RetryLoop noFill;
-class MainFlow,RetryLoop transparent;
+    class processStart,createRequest,sendRequest,checkTimeout,targetReady,waitRetry,programTerminated,processEnd,MainFlow,RetryLoop noFill;
+    class MainFlow,RetryLoop transparent;
 ```
 
 </details>
 
+## Permissions
+
+Only `ICMP` checks in Kubernetes require additional permissions. The container needs the `CAP_NET_RAW` capability to send ICMP packets.
+
+Example:
+
+```yaml
+- name: wait-for-host
+  image: ghcr.io/containeroo/never:latest
+  args:
+    - --icmp.host.address=hostname.domain.com
+    - --icmp.host.timeout=2s
+  securityContext:
+    readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    capabilities:
+      add: ["CAP_NET_RAW"]
+```
+
+For `TCP` and `HTTP` checks, the container does not require any additional permissions.
+
 ## Kubernetes initContainer Configuration
 
-Configure your Kubernetes deployment to use this init container:
+Configure your Kubernetes deployment to use `never` as an init container.
+
+### Using Args
 
 ```yaml
 initContainers:
@@ -391,23 +509,60 @@ initContainers:
     image: ghcr.io/containeroo/never:latest
     args:
       - --icmp.vm.address=hostname.domain.tld
-    securityContext: # icmp requires CAP_NET_RAW
+      - --icmp.vm.timeout=2s
+    securityContext:
       readOnlyRootFilesystem: true
       allowPrivilegeEscalation: false
       capabilities:
         add: ["CAP_NET_RAW"]
-  - name: wait-for-it
+
+  - name: wait-for-services
     image: ghcr.io/containeroo/never:latest
     args:
-      - --target.postgres.address=postgres.default.svc.cluster.local:9000/healthz # use healthz endpoint to check if postgres is ready
-      - --target.postgres.method=POST
-      - --target.postgres.header=Authorization=env:BEARER_TOKEN
-      - --target.postgres.expected-status-codes=200,202
-      - --target.redis.name=redis
-      - --target.redis.address=redis.default.svc.cluster.local:6437
+      - --http.postgres.address=http://postgres.default.svc.cluster.local:9000/healthz
+      - --http.postgres.method=POST
+      - --http.postgres.header=Authorization=env:BEARER_TOKEN
+      - --http.postgres.expected-status-codes=200,202
+      - --tcp.redis.name=redis
+      - --tcp.redis.address=redis.default.svc.cluster.local:6379
       - --tcp.vaultkey.address=valkey.default.svc.cluster.local:6379
       - --tcp.vaultkey.interval=5s
       - --tcp.vaultkey.timeout=5s
+    envFrom:
+      - secretRef:
+          name: bearer-token
+```
+
+### Using Environment Variables
+
+```yaml
+initContainers:
+  - name: wait-for-services
+    image: ghcr.io/containeroo/never:latest
+    env:
+      - name: NEVER__DEFAULT_INTERVAL
+        value: 5s
+
+      - name: NEVER__HTTP_POSTGRES_ADDRESS
+        value: http://postgres.default.svc.cluster.local:9000/healthz
+      - name: NEVER__HTTP_POSTGRES_METHOD
+        value: POST
+      - name: NEVER__HTTP_POSTGRES_HEADER
+        value: Authorization=env:BEARER_TOKEN
+      - name: NEVER__HTTP_POSTGRES_EXPECTED_STATUS_CODES
+        value: 200,202
+
+      - name: NEVER__TCP_REDIS_NAME
+        value: redis
+      - name: NEVER__TCP_REDIS_ADDRESS
+        value: redis.default.svc.cluster.local:6379
+
+      - name: NEVER__TCP_VAULTKEY_ADDRESS
+        value: valkey.default.svc.cluster.local:6379
+      - name: NEVER__TCP_VAULTKEY_INTERVAL
+        value: 5s
+      - name: NEVER__TCP_VAULTKEY_TIMEOUT
+        value: 5s
     envFrom:
       - secretRef:
           name: bearer-token
