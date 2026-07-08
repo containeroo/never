@@ -50,7 +50,7 @@ type CheckerWithInterval struct {
 
 // BuildCheckers creates a list of CheckerWithInterval from typed target configuration.
 func BuildCheckers(targets []TargetConfig, defaultInterval time.Duration) ([]CheckerWithInterval, error) {
-	var checkers []CheckerWithInterval
+	checkers := make([]CheckerWithInterval, 0, len(targets))
 
 	for _, target := range targets {
 		resolvedAddr, err := resolver.ResolveVariable(target.Address)
