@@ -115,150 +115,72 @@ NEVER__ICMP_HOST_ADDRESS=example.com
 
 #### HTTP Flags
 
-- **`--http.<IDENTIFIER>.name`** = `string`
-  Env: `NEVER__HTTP_<IDENTIFIER>_NAME`
-  The name of the target. If not specified, it uses the `<IDENTIFIER>` as the name.
+| Flag                                          | Type        | Default        | Description                                                                                                  |
+| --------------------------------------------- | ----------- | -------------- | ------------------------------------------------------------------------------------------------------------ |
+| `--http.<IDENTIFIER>.name`                    | string      | `<IDENTIFIER>` | Name of the HTTP checker.                                                                                    |
+| `--http.<IDENTIFIER>.address`                 | string      | required       | HTTP target URL. \*                                                                                          |
+| `--http.<IDENTIFIER>.interval`                | duration    | `0`            | Time between HTTP requests. Uses `--default-interval` when unset or `0`.                                     |
+| `--http.<IDENTIFIER>.max-attempts`            | int         | `0`            | Maximum attempts before giving up. Uses `--max-attempts` when unset or `0`.                                  |
+| `--http.<IDENTIFIER>.backoff`                 | enum        | `linear`       | Retry backoff mode. Allowed values: `linear`, `exponential`.                                                 |
+| `--http.<IDENTIFIER>.max-interval`            | duration    | `0`            | Maximum retry interval when backoff increases the delay. Uncapped when unset or `0`.                         |
+| `--http.<IDENTIFIER>.method`                  | enum        | `GET`          | HTTP method. Allowed values: `GET`, `HEAD`, `POST`, `PUT`, `PATCH`, `DELETE`, `CONNECT`, `OPTIONS`, `TRACE`. |
+| `--http.<IDENTIFIER>.header`                  | string list | empty          | HTTP header in `KEY=VALUE` format. Can be passed multiple times as a flag. Header values can be resolved. \* |
+| `--http.<IDENTIFIER>.allow-duplicate-headers` | bool        | `false`        | Allow duplicate HTTP headers.                                                                                |
+| `--http.<IDENTIFIER>.expected-status-codes`   | string list | `200`          | Expected HTTP status codes. Supports comma-separated codes and ranges, for example `200,204,301-302`.        |
+| `--http.<IDENTIFIER>.skip-tls-verify`         | bool        | `false`        | Skip TLS certificate verification.                                                                           |
+| `--http.<IDENTIFIER>.timeout`                 | duration    | `2s`           | HTTP request timeout.                                                                                        |
 
-- **`--http.<IDENTIFIER>.address`** = `string`
-  Env: `NEVER__HTTP_<IDENTIFIER>_ADDRESS`
-  The target URL.
-  **Resolvable:** See [Resolving Variables](#resolving-variables) below.
-
-- **`--http.<IDENTIFIER>.interval`** = `duration`
-  Env: `NEVER__HTTP_<IDENTIFIER>_INTERVAL`
-  The interval between HTTP requests. Defaults to `--default-interval` when unset or `0`.
-
-- **`--http.<IDENTIFIER>.max-attempts`** = `int`
-  Env: `NEVER__HTTP_<IDENTIFIER>_MAX_ATTEMPTS`
-  Maximum attempts before giving up. Defaults to `--max-attempts` when unset or `0`.
-
-- **`--http.<IDENTIFIER>.backoff`** = `enum`
-  Env: `NEVER__HTTP_<IDENTIFIER>_BACKOFF`
-  Retry backoff mode. Allowed values: `linear`, `exponential`. Defaults to `linear`.
-
-- **`--http.<IDENTIFIER>.max-interval`** = `duration`
-  Env: `NEVER__HTTP_<IDENTIFIER>_MAX_INTERVAL`
-  Maximum retry interval when backoff increases the delay. Defaults to uncapped when unset or `0`.
-
-- **`--http.<IDENTIFIER>.method`** = `enum`
-  Env: `NEVER__HTTP_<IDENTIFIER>_METHOD`
-  The HTTP method to use. Allowed values: `GET`, `HEAD`, `POST`, `PUT`, `PATCH`, `DELETE`, `CONNECT`, `OPTIONS`, `TRACE`. Defaults to `GET`.
-
-- **`--http.<IDENTIFIER>.header`** = `string`
-  Env: `NEVER__HTTP_<IDENTIFIER>_HEADER`
-  An HTTP header in `key=value` format. Can be specified multiple times as a flag.
-  **Example:** `Authorization=Bearer token`
-  **Resolvable:** See [Resolving Variables](#resolving-variables) below.
-
-- **`--http.<IDENTIFIER>.allow-duplicate-headers`** = `bool`
-  Env: `NEVER__HTTP_<IDENTIFIER>_ALLOW_DUPLICATE_HEADERS`
-  Allow duplicate headers. Defaults to `false`.
-
-- **`--http.<IDENTIFIER>.expected-status-codes`** = `string`
-  Env: `NEVER__HTTP_<IDENTIFIER>_EXPECTED_STATUS_CODES`
-  A comma-separated list of expected HTTP status codes or ranges. Defaults to `200`.
-  **Example:** `200,204,301-302`
-
-- **`--http.<IDENTIFIER>.skip-tls-verify`** = `bool`
-  Env: `NEVER__HTTP_<IDENTIFIER>_SKIP_TLS_VERIFY`
-  Whether to skip TLS verification. Defaults to `false`.
-
-- **`--http.<IDENTIFIER>.timeout`** = `duration`
-  Env: `NEVER__HTTP_<IDENTIFIER>_TIMEOUT`
-  The timeout for the HTTP request. Defaults to `2s`.
+Environment variables use `NEVER__HTTP_<IDENTIFIER>_<PROPERTY>`.
+Example: `--http.web.address` becomes `NEVER__HTTP_WEB_ADDRESS`.
 
 #### ICMP Flags
 
-- **`--icmp.<IDENTIFIER>.name`** = `string`
-  Env: `NEVER__ICMP_<IDENTIFIER>_NAME`
-  The name of the target. If not specified, it uses the `<IDENTIFIER>` as the name.
+| Flag                                | Type     | Default        | Description                                                                                         |
+| ----------------------------------- | -------- | -------------- | --------------------------------------------------------------------------------------------------- |
+| `--icmp.<IDENTIFIER>.name`          | string   | `<IDENTIFIER>` | Name of the ICMP checker.                                                                           |
+| `--icmp.<IDENTIFIER>.address`       | string   | required       | ICMP target hostname or IP address. \*                                                              |
+| `--icmp.<IDENTIFIER>.interval`      | duration | `0`            | Time between ICMP requests. Uses `--default-interval` when unset or `0`.                            |
+| `--icmp.<IDENTIFIER>.max-attempts`  | int      | `0`            | Maximum attempts before giving up. Uses `--max-attempts` when unset or `0`.                         |
+| `--icmp.<IDENTIFIER>.backoff`       | enum     | `linear`       | Retry backoff mode. Allowed values: `linear`, `exponential`.                                        |
+| `--icmp.<IDENTIFIER>.max-interval`  | duration | `0`            | Maximum retry interval when backoff increases the delay. Uncapped when unset or `0`.                |
+| `--icmp.<IDENTIFIER>.timeout`       | duration | `2s`           | Timeout for ICMP read and write operations.                                                         |
+| `--icmp.<IDENTIFIER>.read-timeout`  | duration | `0`            | Advanced override for the ICMP read timeout. Uses `--icmp.<IDENTIFIER>.timeout` when unset or `0`.  |
+| `--icmp.<IDENTIFIER>.write-timeout` | duration | `0`            | Advanced override for the ICMP write timeout. Uses `--icmp.<IDENTIFIER>.timeout` when unset or `0`. |
 
-- **`--icmp.<IDENTIFIER>.address`** = `string`
-  Env: `NEVER__ICMP_<IDENTIFIER>_ADDRESS`
-  The target address.
-  **Resolvable:** See [Resolving Variables](#resolving-variables) below.
-
-- **`--icmp.<IDENTIFIER>.interval`** = `duration`
-  Env: `NEVER__ICMP_<IDENTIFIER>_INTERVAL`
-  The interval between ICMP requests. Defaults to `--default-interval` when unset or `0`.
-
-- **`--icmp.<IDENTIFIER>.max-attempts`** = `int`
-  Env: `NEVER__ICMP_<IDENTIFIER>_MAX_ATTEMPTS`
-  Maximum attempts before giving up. Defaults to `--max-attempts` when unset or `0`.
-
-- **`--icmp.<IDENTIFIER>.backoff`** = `enum`
-  Env: `NEVER__ICMP_<IDENTIFIER>_BACKOFF`
-  Retry backoff mode. Allowed values: `linear`, `exponential`. Defaults to `linear`.
-
-- **`--icmp.<IDENTIFIER>.max-interval`** = `duration`
-  Env: `NEVER__ICMP_<IDENTIFIER>_MAX_INTERVAL`
-  Maximum retry interval when backoff increases the delay. Defaults to uncapped when unset or `0`.
-
-- **`--icmp.<IDENTIFIER>.timeout`** = `duration`
-  Env: `NEVER__ICMP_<IDENTIFIER>_TIMEOUT`
-  Timeout for ICMP read and write operations. Defaults to `2s`.
-
-- **`--icmp.<IDENTIFIER>.read-timeout`** = `duration`
-  Env: `NEVER__ICMP_<IDENTIFIER>_READ_TIMEOUT`
-  Advanced override for the ICMP read timeout. Defaults to `--icmp.<IDENTIFIER>.timeout` when unset or `0`.
-
-- **`--icmp.<IDENTIFIER>.write-timeout`** = `duration`
-  Env: `NEVER__ICMP_<IDENTIFIER>_WRITE_TIMEOUT`
-  Advanced override for the ICMP write timeout. Defaults to `--icmp.<IDENTIFIER>.timeout` when unset or `0`.
+Environment variables use `NEVER__ICMP_<IDENTIFIER>_<PROPERTY>`.
+Example: `--icmp.host.address` becomes `NEVER__ICMP_HOST_ADDRESS`.
 
 #### TCP Flags
 
-- **`--tcp.<IDENTIFIER>.name`** = `string`
-  Env: `NEVER__TCP_<IDENTIFIER>_NAME`
-  The name of the target. If not specified, it uses the `<IDENTIFIER>` as the name.
+| Flag                              | Type     | Default        | Description                                                                          |
+| --------------------------------- | -------- | -------------- | ------------------------------------------------------------------------------------ |
+| `--tcp.<IDENTIFIER>.name`         | string   | `<IDENTIFIER>` | Name of the TCP checker.                                                             |
+| `--tcp.<IDENTIFIER>.address`      | string   | required       | TCP target address in `host:port` format. \*                                         |
+| `--tcp.<IDENTIFIER>.timeout`      | duration | `2s`           | TCP connection timeout.                                                              |
+| `--tcp.<IDENTIFIER>.interval`     | duration | `0`            | Time between TCP requests. Uses `--default-interval` when unset or `0`.              |
+| `--tcp.<IDENTIFIER>.max-attempts` | int      | `0`            | Maximum attempts before giving up. Uses `--max-attempts` when unset or `0`.          |
+| `--tcp.<IDENTIFIER>.backoff`      | enum     | `linear`       | Retry backoff mode. Allowed values: `linear`, `exponential`.                         |
+| `--tcp.<IDENTIFIER>.max-interval` | duration | `0`            | Maximum retry interval when backoff increases the delay. Uncapped when unset or `0`. |
 
-- **`--tcp.<IDENTIFIER>.address`** = `string`
-  Env: `NEVER__TCP_<IDENTIFIER>_ADDRESS`
-  The target address in `host:port` format.
-  **Resolvable:** See [Resolving Variables](#resolving-variables) below.
-
-- **`--tcp.<IDENTIFIER>.timeout`** = `duration`
-  Env: `NEVER__TCP_<IDENTIFIER>_TIMEOUT`
-  The timeout for the TCP connection attempt. Defaults to `2s`.
-
-- **`--tcp.<IDENTIFIER>.interval`** = `duration`
-  Env: `NEVER__TCP_<IDENTIFIER>_INTERVAL`
-  The interval between TCP requests. Defaults to `--default-interval` when unset or `0`.
-
-- **`--tcp.<IDENTIFIER>.max-attempts`** = `int`
-  Env: `NEVER__TCP_<IDENTIFIER>_MAX_ATTEMPTS`
-  Maximum attempts before giving up. Defaults to `--max-attempts` when unset or `0`.
-
-- **`--tcp.<IDENTIFIER>.backoff`** = `enum`
-  Env: `NEVER__TCP_<IDENTIFIER>_BACKOFF`
-  Retry backoff mode. Allowed values: `linear`, `exponential`. Defaults to `linear`.
-
-- **`--tcp.<IDENTIFIER>.max-interval`** = `duration`
-  Env: `NEVER__TCP_<IDENTIFIER>_MAX_INTERVAL`
-  Maximum retry interval when backoff increases the delay. Defaults to uncapped when unset or `0`.
+Environment variables use `NEVER__TCP_<IDENTIFIER>_<PROPERTY>`.
+Example: `--tcp.db.address` becomes `NEVER__TCP_DB_ADDRESS`.
 
 ## Resolving Variables
 
-Some values, such as target addresses and HTTP header values, can be resolved using environment variables, files, JSON, YAML, and INI files.
+Some flag values can be resolved from environment variables, files, JSON, YAML, and INI files.
+
+Fields marked with `*` in the flag tables support resolving variables.
 
 This is separate from `NEVER__...` flag environment variables.
 
-- `env:` resolves environment variables.
-  Example: `env:PATH` returns the value of the `PATH` environment variable.
-
-- `file:` resolves values from a simple key-value file.
-  Example: `file:/config/app.txt//KeyName` returns the value associated with `KeyName` in `app.txt`.
-
-- `json:` resolves values from a JSON file. Supports dot notation for nested keys.
-  Example: `json:/config/app.json//database.host` returns the `host` field under `database`.
-
-- `yaml:` resolves values from a YAML file. Supports dot notation for nested keys.
-  Example: `yaml:/config/app.yaml//server.port` returns `port` under `server`.
-
-- `ini:` resolves values from an INI file. Can specify a section and key, or just a key in the default section.
-  Example: `ini:/config/app.ini//Section.Key` returns the value of `Key` under `Section`.
-
-- No prefix returns the value as-is.
+| Prefix  | Source               | Example                                | Description                                                               |
+| ------- | -------------------- | -------------------------------------- | ------------------------------------------------------------------------- |
+| `env:`  | Environment variable | `env:PATH`                             | Resolves the value from an environment variable.                          |
+| `file:` | Key-value file       | `file:/config/app.txt//KeyName`        | Resolves `KeyName` from a simple key-value file.                          |
+| `json:` | JSON file            | `json:/config/app.json//database.host` | Resolves a value from a JSON file. Supports dot notation for nested keys. |
+| `yaml:` | YAML file            | `yaml:/config/app.yaml//server.port`   | Resolves a value from a YAML file. Supports dot notation for nested keys. |
+| `ini:`  | INI file             | `ini:/config/app.ini//Section.Key`     | Resolves a value from an INI file section and key.                        |
+| none    | Literal value        | `http://example.com`                   | Uses the value as-is.                                                     |
 
 HTTP header values can also be resolved using the same mechanism:
 
