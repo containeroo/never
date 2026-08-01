@@ -1,12 +1,24 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": [
-    "config:recommended"
+  "extends": ["config:recommended"],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/(^|/)Dockerfile(\\.goreleaser)?$/"],
+      "matchStrings": [
+        "^#\\s*syntax=(?<depName>docker/dockerfile):(?<currentValue>\\S+)$"
+      ],
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "semver"
+    }
   ],
-  "labels": [
-    "dependencies"
+  "labels": ["dependencies"],
+  "packageRules": [
+    {
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["docker/dockerfile"],
+      "automerge": true
+    }
   ],
-  "postUpdateOptions": [
-    "gomodTidy"
-  ]
+  "postUpdateOptions": ["gomodTidy"]
 }
