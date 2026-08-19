@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.26
 
 # Build the manager binary.
-FROM golang:1.26 AS prep
+FROM golang:1.27 AS prep
 
 ARG TARGETOS
 ARG TARGETARCH
