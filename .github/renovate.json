@@ -18,6 +18,11 @@
       "matchDatasources": ["docker"],
       "matchPackageNames": ["docker/dockerfile"],
       "automerge": true
+    },
+    {
+      "matchManagers": ["github-actions"],
+      "matchPackageNames": ["golangci/golangci-lint"],
+      "automerge": true
     }
   ],
   "postUpdateOptions": ["gomodTidy"]
