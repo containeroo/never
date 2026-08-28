@@ -1,6 +1,8 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:recommended"],
+  "postUpdateOptions": ["gomodTidy"],
+  "labels": ["dependencies"],
   "customManagers": [
     {
       "customType": "regex",
@@ -12,7 +14,6 @@
       "versioningTemplate": "semver"
     }
   ],
-  "labels": ["dependencies"],
   "packageRules": [
     {
       "matchDatasources": ["docker"],
@@ -24,6 +25,5 @@
       "matchPackageNames": ["golangci/golangci-lint"],
       "automerge": true
     }
-  ],
-  "postUpdateOptions": ["gomodTidy"]
+  ]
 }
