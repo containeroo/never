@@ -1,9 +1,9 @@
 module github.com/containeroo/never
 
-go 1.25.0
+go 1.27.0
 
 require (
-	github.com/containeroo/httpgrace v0.1.2
+	github.com/containeroo/httpgrace v0.2.0
 	github.com/containeroo/httputils v0.0.1
 	github.com/containeroo/resolver v0.3.2
 	github.com/containeroo/tinyflags v0.0.80
