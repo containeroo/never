@@ -43,10 +43,14 @@ func registerHTTPFlags(tf *tinyflags.FlagSet) {
 	).
 		Placeholder("DETAIL")
 	httpGroup.Duration("interval", 0*time.Second, "Time between HTTP requests. Defaults to --default-interval when unset or 0.").
-		Validate(validateNonNegativeDuration()).
+		Validate(tinyflags.Optional(
+			tinyflags.NonNegative[time.Duration](),
+		)).
 		Placeholder("DURATION")
 	httpGroup.Int("max-attempts", 0, "Maximum attempts before giving up. Inherits --max-attempts when unset; 0 means endless retries.").
-		Validate(validateNonNegativeInt()).
+		Validate(tinyflags.Optional(
+			tinyflags.NonNegative[int](),
+		)).
 		Placeholder("N")
 	registerRetryFlags(httpGroup)
 	// Headers are repeated flags; a newline delimiter preserves commas inside header values.
@@ -65,11 +69,15 @@ func registerHTTPFlags(tf *tinyflags.FlagSet) {
 		Placeholder("CODES...")
 	httpGroup.Bool("follow-redirects", defaultHTTPFollowRedirects, "Follow HTTP redirects").Strict()
 	httpGroup.Int("max-redirects", defaultHTTPMaxRedirects, "Maximum number of redirects to follow. Set to 0 to disable redirects.").
-		Validate(validateNonNegativeInt()).
+		Validate(tinyflags.Optional(
+			tinyflags.NonNegative[int](),
+		)).
 		Placeholder("N")
 
 	httpGroup.Bool("skip-tls-verify", defaultHTTPSkipTLSVerify, "Skip TLS verification")
 	httpGroup.Duration("timeout", checker.DefaultHTTPConfig().Timeout, "Request timeout").
-		Validate(validatePositiveDuration()).
+		Validate(tinyflags.Optional(
+			tinyflags.NonNegative[time.Duration](),
+		)).
 		Placeholder("DURATION")
 }

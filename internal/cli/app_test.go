@@ -26,7 +26,7 @@ func TestParseFlagsDefaultIntervalRejectsNegative(t *testing.T) {
 
 	_, err := ParseFlags([]string{"--default-interval=-1s"}, "1.0.0")
 	require.Error(t, err)
-	assert.ErrorContains(t, err, "must be non-negative")
+	assert.ErrorContains(t, err, "must not be negative")
 }
 
 // TestParseFlagsHelp verifies help requests are returned as tinyflags errors.
@@ -91,7 +91,7 @@ func TestParseFlagsMaxAttempts(t *testing.T) {
 
 		_, err := ParseFlags([]string{"--max-attempts=-1"}, "1.0.0")
 		require.Error(t, err)
-		assert.ErrorContains(t, err, "must be non-negative")
+		assert.ErrorContains(t, err, "must not be negative")
 	})
 }
 

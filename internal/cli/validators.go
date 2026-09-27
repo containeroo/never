@@ -7,7 +7,6 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
-	"time"
 )
 
 // validateHTTPAddress validates HTTP target addresses and resolver references.
@@ -136,35 +135,4 @@ func isHostnameLike(s string) bool {
 // isAlphaNum reports whether ch is an ASCII letter or digit.
 func isAlphaNum(ch byte) bool {
 	return ('a' <= ch && ch <= 'z') || ('A' <= ch && ch <= 'Z') || ('0' <= ch && ch <= '9')
-}
-
-// //validatePositiveDuration validates a positive duration flag.
-func validatePositiveDuration() func(time.Duration) error {
-	return func(v time.Duration) error {
-		if v <= 0 {
-			return errors.New("must be positive")
-		}
-		return nil
-	}
-}
-
-// validateNonNegativeDuration returns a validator that rejects negative durations.
-func validateNonNegativeDuration() func(time.Duration) error {
-	return func(d time.Duration) error {
-		if d < 0 {
-			return errors.New("must be non-negative")
-		}
-
-		return nil
-	}
-}
-
-// validateNonNegativeInt returns a validator that rejects negative integers.
-func validateNonNegativeInt() func(int) error {
-	return func(v int) error {
-		if v < 0 {
-			return errors.New("must be non-negative")
-		}
-		return nil
-	}
 }

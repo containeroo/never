@@ -2,78 +2,11 @@ package cli
 
 import (
 	"testing"
-	"time"
 
 	"github.com/containeroo/never/internal/testutils"
 
 	"github.com/stretchr/testify/assert"
 )
-
-// TestValidateNonNegativeInt verifies non-negative integer validation.
-func TestValidateNonNegativeInt(t *testing.T) {
-	t.Parallel()
-
-	validate := validateNonNegativeInt()
-
-	t.Run("zero", func(t *testing.T) {
-		t.Parallel()
-		assert.NoError(t, validate(0))
-	})
-
-	t.Run("positive", func(t *testing.T) {
-		t.Parallel()
-		assert.NoError(t, validate(3))
-	})
-
-	t.Run("negative", func(t *testing.T) {
-		t.Parallel()
-		assert.EqualError(t, validate(-1), "must be non-negative")
-	})
-}
-
-// TestValidatePositiveDuration verifies positive duration validation.
-func TestValidatePositiveDuration(t *testing.T) {
-	t.Parallel()
-
-	validateTimeout := validatePositiveDuration()
-
-	t.Run("positive", func(t *testing.T) {
-		t.Parallel()
-		assert.NoError(t, validateTimeout(time.Nanosecond))
-	})
-
-	t.Run("zero", func(t *testing.T) {
-		t.Parallel()
-		assert.EqualError(t, validateTimeout(0), "must be positive")
-	})
-
-	t.Run("negative", func(t *testing.T) {
-		t.Parallel()
-		assert.EqualError(t, validateTimeout(-time.Second), "must be positive")
-	})
-}
-
-// TestValidateNonNegativeDuration verifies non-negative duration validation.
-func TestValidateNonNegativeDuration(t *testing.T) {
-	t.Parallel()
-
-	validateInterval := validateNonNegativeDuration()
-
-	t.Run("zero", func(t *testing.T) {
-		t.Parallel()
-		assert.NoError(t, validateInterval(0))
-	})
-
-	t.Run("positive", func(t *testing.T) {
-		t.Parallel()
-		assert.NoError(t, validateInterval(time.Second))
-	})
-
-	t.Run("negative", func(t *testing.T) {
-		t.Parallel()
-		assert.EqualError(t, validateInterval(-time.Second), "must be non-negative")
-	})
-}
 
 // TestValidateHTTPAddress verifies HTTP address validation accepts supported inputs.
 func TestValidateHTTPAddress(t *testing.T) {

@@ -198,7 +198,7 @@ func TestParseFlagsHTTPMaxRedirects(t *testing.T) {
 			"--http.web.max-redirects=-1",
 		}, "1.0.0")
 		require.Error(t, err)
-		assert.ErrorContains(t, err, "must be non-negative")
+		assert.ErrorContains(t, err, "must not be negative")
 	})
 }
 
@@ -408,7 +408,7 @@ func TestParseFlagsHTTPRetryValidation(t *testing.T) {
 
 		_, err := ParseFlags([]string{httpWebAddressFlag, "--http.web.interval=-1s"}, "1.0.0")
 		require.Error(t, err)
-		assert.ErrorContains(t, err, "must be non-negative")
+		assert.ErrorContains(t, err, "must not be negative")
 	})
 
 	t.Run("negative max interval", func(t *testing.T) {
@@ -416,7 +416,7 @@ func TestParseFlagsHTTPRetryValidation(t *testing.T) {
 
 		_, err := ParseFlags([]string{httpWebAddressFlag, "--http.web.max-interval=-1s"}, "1.0.0")
 		require.Error(t, err)
-		assert.ErrorContains(t, err, "must be non-negative")
+		assert.ErrorContains(t, err, "must not be negative")
 	})
 
 	t.Run("invalid max attempts", func(t *testing.T) {
@@ -424,6 +424,6 @@ func TestParseFlagsHTTPRetryValidation(t *testing.T) {
 
 		_, err := ParseFlags([]string{httpWebAddressFlag, "--http.web.max-attempts=-1"}, "1.0.0")
 		require.Error(t, err)
-		assert.ErrorContains(t, err, "must be non-negative")
+		assert.ErrorContains(t, err, "must not be negative")
 	})
 }
