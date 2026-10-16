@@ -10,7 +10,7 @@ import (
 	"github.com/containeroo/never/internal/logging"
 	"github.com/containeroo/never/internal/runner"
 
-	"github.com/containeroo/httpgrace/server"
+	server "github.com/containeroo/httpkit/grace"
 	"github.com/containeroo/tinyflags"
 )
 
