@@ -1,37 +1,34 @@
-# Detect platform for sed compatibility
-SED := $(shell if [ "$(shell uname)" = "Darwin" ]; then echo gsed; else echo sed; fi)
+.DEFAULT_GOAL := help
 
-## Location to install dependencies to
-LOCALBIN ?= $(shell pwd)/bin
-$(LOCALBIN):
-	mkdir -p $(LOCALBIN)
+# renovate: datasource=github-releases depName=gi8lino/dev-tools
+DEV_TOOLS_VERSION ?= v0.9.0
+
+include bin/dev-tools.mk
+include $(call dev-tools-module,tag)
+include $(call dev-tools-module,help)
+
+LOCALBIN ?= $(CURDIR)/bin
 
 ## Tool Binaries
 GOLANGCI_LINT = $(LOCALBIN)/golangci-lint
 
 ## Documentation Tools
-LORE ?= $(LOCALBIN)/lore
+KUMBUKA_CLI ?= $(LOCALBIN)/kumbuka-cli
 
 ## Tool Versions
 # renovate: datasource=github-releases depName=golangci/golangci-lint
 GOLANGCI_LINT_VERSION ?= v2.13.2
-# renovate: datasource=github-releases depName=gi8lino/lore
-LORE_VERSION ?= v0.3.0
+# renovate: datasource=github-releases depName=kumbuka-me/cli
+KUMBUKA_CLI_VERSION ?= v0.13.10
 
 ## Site Configuration
-SITE_CONFIG ?= docs/lore-site.toml
+SITE_CONFIG ?= docs/kumbuka-site.toml
 SITE_OUTPUT ?= docs/site
 SITE_PORT ?= 8081
 SITE_LOGO ?= docs/assets/logo.svg
 SITE_FAVICON_SVG ?= docs/content/assets/favicon.svg
 SITE_FAVICON_ICO ?= docs/content/favicon.ico
 MAGICK ?= magick
-
-##@ General
-
-.PHONY: help
-help: ## Display this help.
-	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z_0-9-]+:.*?##/ { printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
 
 ##@ Development
 
@@ -83,98 +80,38 @@ site-favicon: ## Generate the documentation SVG favicon and multi-size ICO (requ
 	cp "$(SITE_LOGO)" "$(SITE_FAVICON_SVG)"
 
 .PHONY: site
-site: lore ## Build the static documentation site with Lore.
-	"$(LORE)" build --config "$(SITE_CONFIG)"
+site: kumbuka-cli ## Build the static documentation site with Kumbuka.
+	"$(KUMBUKA_CLI)" build --config "$(SITE_CONFIG)"
 
 .PHONY: site-serve
-site-serve: lore ## Build and serve the documentation site locally.
-	"$(LORE)" build --config "$(SITE_CONFIG)" \
+site-serve: kumbuka-cli ## Build and serve the documentation site locally.
+	"$(KUMBUKA_CLI)" build --config "$(SITE_CONFIG)" \
 		--site-url "http://127.0.0.1:$(SITE_PORT)/"
-	@echo "Serving Lore documentation at http://127.0.0.1:$(SITE_PORT)"
+	@echo "Serving Kumbuka documentation at http://127.0.0.1:$(SITE_PORT)"
 	python3 -m http.server $(SITE_PORT) --bind 127.0.0.1 --directory "$(SITE_OUTPUT)"
 
-##@ Tagging
-
-# Find the latest tag (with prefix filter if defined, default to 0.0.0 if none found)
-# Lazy evaluation ensures fresh values on every run
-VERSION_PREFIX ?= v
-LATEST_TAG = $(shell git tag --list "$(VERSION_PREFIX)*" --sort=-v:refname | head -n 1)
-VERSION = $(shell [ -n "$(LATEST_TAG)" ] && echo $(LATEST_TAG) | sed "s/^$(VERSION_PREFIX)//" || echo "0.0.0")
-
-patch: ## Create a new patch release (x.y.Z+1)
-	@NEW_VERSION=$$(echo "$(VERSION)" | awk -F. '{printf "%d.%d.%d", $$1, $$2, $$3+1}') && \
-	git tag "$(VERSION_PREFIX)$${NEW_VERSION}" && \
-	echo "Tagged $(VERSION_PREFIX)$${NEW_VERSION}"
-
-minor: ## Create a new minor release (x.Y+1.0)
-	@NEW_VERSION=$$(echo "$(VERSION)" | awk -F. '{printf "%d.%d.0", $$1, $$2+1}') && \
-	git tag "$(VERSION_PREFIX)$${NEW_VERSION}" && \
-	echo "Tagged $(VERSION_PREFIX)$${NEW_VERSION}"
-
-major: ## Create a new major release (X+1.0.0)
-	@NEW_VERSION=$$(echo "$(VERSION)" | awk -F. '{printf "%d.0.0", $$1+1}') && \
-	git tag "$(VERSION_PREFIX)$${NEW_VERSION}" && \
-	echo "Tagged $(VERSION_PREFIX)$${NEW_VERSION}"
-
-tag: ## Show latest tag
-	@echo "Latest version: $(LATEST_TAG)"
-
-push: ## Push tags to remote
-	git push --tags
-
+# Preserve the existing target name for callers.
+.PHONY: tag
+tag: current ## Show the current semantic version tag.
 
 ##@ Dependencies
 
-.PHONY: lore
-lore: ## Download the pinned Lore binary into bin if necessary.
-ifeq ($(LORE),$(LOCALBIN)/lore)
-	@set -eu; \
-	case "$$(uname -s)" in Darwin) os=darwin ;; Linux) os=linux ;; *) echo "Unsupported Lore operating system" >&2; exit 1 ;; esac; \
-	case "$$(uname -m)" in arm64|aarch64) arch=arm64 ;; x86_64|amd64) arch=amd64 ;; *) echo "Unsupported Lore architecture" >&2; exit 1 ;; esac; \
-	version="$(LORE_VERSION)"; \
-	binary="lore-$${version}-$${os}-$${arch}"; \
-	mkdir -p "$(LOCALBIN)"; \
-	if [ ! -x "$(LOCALBIN)/$$binary" ]; then \
-		tmp=$$(mktemp -d "$(LOCALBIN)/.lore-download.XXXXXX"); \
-		trap 'rm -rf "$$tmp"' EXIT HUP INT TERM; \
-		archive="lore_$${version#v}_$${os}_$${arch}.tar.gz"; \
-		release="https://github.com/gi8lino/lore/releases/download/$$version"; \
-		echo "Downloading Lore $$version ($$os/$$arch)"; \
-		curl --fail --silent --show-error --location --retry 3 -o "$$tmp/$$archive" "$$release/$$archive"; \
-		curl --fail --silent --show-error --location --retry 3 -o "$$tmp/checksums.txt" "$$release/lore_$${version#v}_checksums.txt"; \
-		expected=$$(awk -v archive="$$archive" '$$2 == archive { print $$1; found = 1 } END { if (!found) exit 1 }' "$$tmp/checksums.txt"); \
-		if command -v sha256sum >/dev/null 2>&1; then \
-			actual=$$(sha256sum "$$tmp/$$archive" | awk '{print $$1}'); \
-		else \
-			actual=$$(shasum -a 256 "$$tmp/$$archive" | awk '{print $$1}'); \
-		fi; \
-		[ "$$actual" = "$$expected" ] || { echo "Lore checksum mismatch" >&2; exit 1; }; \
-		tar -xzf "$$tmp/$$archive" -C "$$tmp" lore; \
-		chmod +x "$$tmp/lore"; \
-		mv "$$tmp/lore" "$(LOCALBIN)/$$binary"; \
-	fi; \
-	ln -sfn "$$binary" "$(LORE)"
+.PHONY: kumbuka-cli
+kumbuka-cli: $(GITHUB_RELEASE_INSTALL) ## Download the pinned Kumbuka binary into bin if necessary.
+ifeq ($(KUMBUKA_CLI),$(LOCALBIN)/kumbuka-cli)
+	$(call run-tool,$(GITHUB_RELEASE_INSTALL),\
+		--repo kumbuka-me/cli \
+		--tag "$(KUMBUKA_CLI_VERSION)" \
+		--asset "kumbuka-cli_{version}_{os}_{arch}.tar.gz" \
+		--binary kumbuka-cli \
+		--target "$(KUMBUKA_CLI)")
 else
-	@command -v "$(LORE)" >/dev/null 2>&1 || { echo "Lore binary not found: $(LORE)" >&2; exit 1; }
+	@command -v "$(KUMBUKA_CLI)" >/dev/null 2>&1 || { echo "Kumbuka binary not found: $(KUMBUKA_CLI)" >&2; exit 1; }
 endif
 
 .PHONY: golangci-lint
-golangci-lint: $(GOLANGCI_LINT) ## Download golangci-lint locally if necessary.
-$(GOLANGCI_LINT): $(LOCALBIN)
-	$(call go-install-tool,$(GOLANGCI_LINT),github.com/golangci/golangci-lint/v2/cmd/golangci-lint,$(GOLANGCI_LINT_VERSION))
-
-# go-install-tool will 'go install' any package with custom target and name of binary, if it doesn't exist
-# $1 - target path with name of binary
-# $2 - package url which can be installed
-# $3 - specific version of package
-define go-install-tool
-@[ -f "$(1)-$(3)" ] || { \
-set -e; \
-package=$(2)@$(3) ;\
-echo "Downloading $${package}" ;\
-rm -f $(1) || true ;\
-GOBIN=$(LOCALBIN) go install $${package} ;\
-mv $(1) $(1)-$(3) ;\
-} ;\
-ln -sf $(1)-$(3) $(1)
-endef
+golangci-lint: $(GO_INSTALL_TOOL) ## Download the pinned golangci-lint locally if necessary.
+	$(call run-tool,$(GO_INSTALL_TOOL),\
+		--target "$(GOLANGCI_LINT)" \
+		--package github.com/golangci/golangci-lint/v2/cmd/golangci-lint \
+		--tool-version "$(GOLANGCI_LINT_VERSION)")

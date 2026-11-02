@@ -1,3 +1,4 @@
-bin/
+/bin/*
+!/bin/dev-tools.mk
 coverage.out
 /docs/site/

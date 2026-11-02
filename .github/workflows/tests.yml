@@ -12,6 +12,9 @@ on:
       - go.mod
       - go.sum
       - Dockerfile.goreleaser
+      - Makefile
+      - bin/dev-tools.mk
+      - ".github/workflows/tests.yml"
   workflow_dispatch:
 
 jobs:
@@ -31,7 +34,7 @@ jobs:
       - name: Install build tools
         run: |
           apt-get update
-          apt-get install -y make
+          apt-get install -y make curl ca-certificates
 
       - name: Set up Go cache
         uses: actions/cache@v6

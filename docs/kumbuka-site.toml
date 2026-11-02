@@ -4,7 +4,6 @@ source_dir = "docs/content"
 output_dir = "docs/site"
 theme = "Light"
 language = "en"
-mermaid = true
 
 # Branding paths are relative to this configuration file.
 logo = "assets/never.svg"
