@@ -1,5 +1,5 @@
-github.com/containeroo/httpkit v0.0.3 h1:msDWnXu3fhAja9aOXfP6vw6GO803zHW9/lgp+cqOQQU=
-github.com/containeroo/httpkit v0.0.3/go.mod h1:3O+ot7igC5SMFIsVu7nZmBNewa4VbigOOu47eGR9qaI=
+github.com/containeroo/httpkit v0.1.1 h1:Mu6RJX84mY74vaj+vIEu3wqqIntTGMrmCTTmplJhd3s=
+github.com/containeroo/httpkit v0.1.1/go.mod h1:3O+ot7igC5SMFIsVu7nZmBNewa4VbigOOu47eGR9qaI=
 github.com/containeroo/httputils v0.0.2 h1:w+ZrkyQ6BqfJ9D6IebTOA+IbzZgd3scC+0cb4FiM8co=
 github.com/containeroo/httputils v0.0.2/go.mod h1:TrmDptapH6SBe6CeHFWY2kxy63O/9ZWBWrLKpc2SFjI=
 github.com/containeroo/resolver v0.3.2 h1:hA0r3XwEQLD33sKMZwDRPtb1ipWxWaoYm4fS/6YIJsg=
