@@ -1,0 +1,8 @@
+format = 1
+
+[[plugin]]
+id = 'me.kumbuka.tables'
+repository = 'kumbuka-me/plugins'
+tag_prefix = 'tables/v'
+asset = 'tables'
+version = '1.2.3'

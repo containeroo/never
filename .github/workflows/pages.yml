@@ -48,6 +48,7 @@ jobs:
           test -s docs/site/assets/js/static.js
           test -s docs/site/search-index.json
           test -f docs/site/.nojekyll
+          grep -q '<table' docs/site/configuration/http/index.html
 
       - name: Configure GitHub Pages
         if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
