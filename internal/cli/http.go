@@ -54,7 +54,7 @@ func registerHTTPFlags(tf *tinyflags.FlagSet) {
 		Placeholder("N")
 	registerRetryFlags(httpGroup)
 	// Headers are repeated flags; a newline delimiter preserves commas inside header values.
-	httpGroup.StringSlice("header", []string{}, "HTTP headers to send").
+	httpGroup.StringSlice("header", []string{}, "HTTP headers in KEY=VALUE format; values support env:, file:, json:, yaml:, and ini: resolution").
 		Delimiter("\n").
 		Placeholder("KEY=VALUE")
 	httpGroup.Bool("allow-duplicate-headers", defaultHTTPAllowDuplicateHeaders, "Allow duplicate HTTP headers")

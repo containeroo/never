@@ -37,7 +37,8 @@ func ParseFlags(args []string, version string) (*Config, error) {
 
 	tf := tinyflags.NewFlagSet("never", tinyflags.ContinueOnError)
 	tf.Version(version)
-	tf.EnvPrefix("NEVER__")
+	// tinyflags inserts the separator underscore after this prefix.
+	tf.EnvPrefix("NEVER_")
 	tf.HideEnvs()
 	tf.SortedFlags()
 	tf.SortedGroups()

@@ -28,3 +28,17 @@ never \
   --http.api.address=https://example.com/healthz \
   --http.api.header="Authorization=env:API_TOKEN"
 ```
+
+The environment variable in this example must contain the complete authorization value (for example, `Bearer ` followed by the token). Resolution is applied to the whole header value, not to embedded references such as `Bearer env:API_TOKEN`.
+
+For a mounted secret containing just the header value, omit the key selector:
+
+```sh
+never \
+  --http.api.address=https://example.com/healthz \
+  --http.api.header="Authorization=file:/run/secrets/authorization"
+```
+
+`file:` without `//KEY` reads the entire file and trims surrounding whitespace, including its trailing newline. With `//KEY`, it reads the named key instead. Header names remain literal.
+
+Resolution happens once at startup. Missing references cause startup to fail; changing the secret requires restarting Never.
