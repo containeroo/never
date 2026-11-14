@@ -3,7 +3,7 @@ module github.com/containeroo/never
 go 1.27.0
 
 require (
-	github.com/containeroo/httpkit v0.1.1
+	github.com/containeroo/httpkit v0.2.0
 	github.com/containeroo/httputils v0.0.2
 	github.com/containeroo/resolver v0.5.0
 	github.com/containeroo/tinyflags v0.12.0
