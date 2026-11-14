@@ -2,8 +2,8 @@ github.com/containeroo/httpkit v0.1.1 h1:Mu6RJX84mY74vaj+vIEu3wqqIntTGMrmCTTmplJ
 github.com/containeroo/httpkit v0.1.1/go.mod h1:3O+ot7igC5SMFIsVu7nZmBNewa4VbigOOu47eGR9qaI=
 github.com/containeroo/httputils v0.0.2 h1:w+ZrkyQ6BqfJ9D6IebTOA+IbzZgd3scC+0cb4FiM8co=
 github.com/containeroo/httputils v0.0.2/go.mod h1:TrmDptapH6SBe6CeHFWY2kxy63O/9ZWBWrLKpc2SFjI=
-github.com/containeroo/resolver v0.4.1 h1:rWg/0+pJ5odbSup/gxWnAC45zeLDHgMSLxMCkZwHF7o=
-github.com/containeroo/resolver v0.4.1/go.mod h1:CFeRcfiisKdaTyyy7BpeqjjLDSORGq5dbVN3sC4IZrE=
+github.com/containeroo/resolver v0.5.0 h1:5l7LB2FhEmNzqQycdcg+0xkUd53I+yMF3NbqPwnJUc4=
+github.com/containeroo/resolver v0.5.0/go.mod h1:CFeRcfiisKdaTyyy7BpeqjjLDSORGq5dbVN3sC4IZrE=
 github.com/containeroo/tinyflags v0.12.0 h1:GaZXpsp8E3HBSrHAjYOGpTAWDRpc7oRLNZa/CGvQgDo=
 github.com/containeroo/tinyflags v0.12.0/go.mod h1:60uDGGWAChKE4VkKGpxSaFtxoJR/tRk28HdB6OvyR0Q=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
