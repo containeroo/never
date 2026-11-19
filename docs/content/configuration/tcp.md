@@ -23,3 +23,7 @@ never \
   --tcp.database.max-interval=30s \
   --tcp.database.timeout=5s
 ```
+
+## Retry backoff
+
+Set `backoff=exponential` to double the retry delay after each failure, starting with the configured interval. Use `max-interval` to cap the delay. See [retry timing](../behavior.md#retry-timing) for a worked example.

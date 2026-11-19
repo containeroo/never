@@ -25,3 +25,7 @@ never \
 ```
 
 ICMP requires raw-socket privileges. Containers need the `NET_RAW` capability; HTTP and TCP checks need no extra capability. See [Kubernetes](../kubernetes.md) for a complete example.
+
+## Retry backoff
+
+Set `backoff=exponential` to double the retry delay after each failure, starting with the configured interval. Use `max-interval` to cap the delay. See [retry timing](../behavior.md#retry-timing) for a worked example.

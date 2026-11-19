@@ -4,23 +4,23 @@ An HTTP target sends a request and validates the final response status. HTTPS ta
 
 ## Flags
 
-| Flag                                          | Type            | Default          | Description                                                                                                                         |
-| --------------------------------------------- | --------------- | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `--http.<ID>.name`                            | string          | `<ID>`           | Name shown in logs.                                                                                                                 |
-| `--http.<ID>.address`                         | string          | required         | Target URL. Supports a [resolved value](resolved-values.md).                                                                        |
-| `--http.<ID>.address-detail`                  | enum            | `origin`         | URL detail shown in logs: `origin`, `path`, `query`, or `full`.                                                                     |
-| `--http.<ID>.interval`                        | duration        | `0`              | Delay between requests. Uses `--default-interval` when `0`.                                                                         |
-| `--http.<ID>.max-attempts`                    | int             | `--max-attempts` | Per-target attempt limit. `0` means unlimited.                                                                                       |
-| `--http.<ID>.backoff`                         | enum            | `linear`         | Retry backoff: `linear` or `exponential`.                                                                                            |
-| `--http.<ID>.max-interval`                    | duration        | `0`              | Maximum delay when backoff grows. `0` leaves it uncapped.                                                                            |
-| `--http.<ID>.method`                          | enum            | `GET`            | `GET`, `HEAD`, `POST`, `PUT`, `PATCH`, `DELETE`, `CONNECT`, `OPTIONS`, or `TRACE`.                                                   |
-| `--http.<ID>.header`                          | string list     | empty            | Header in `KEY=VALUE` format. Repeat for multiple headers. Values support [resolution](resolved-values.md).                          |
-| `--http.<ID>.allow-duplicate-headers`         | bool            | `false`          | Preserve repeated headers with the same name.                                                                                        |
-| `--http.<ID>.expected-status-codes`           | int list/ranges | `200`            | Accepted statuses, such as `200,204,301-302`.                                                                                        |
-| `--http.<ID>.follow-redirects`                | bool            | `true`           | Follow redirects before validating the response.                                                                                     |
-| `--http.<ID>.max-redirects`                   | int             | `10`             | Maximum redirects to follow. `0` disables following.                                                                                 |
-| `--http.<ID>.skip-tls-verify`                 | bool            | `false`          | Disable TLS certificate verification.                                                                                                |
-| `--http.<ID>.timeout`                         | duration        | `2s`             | Timeout for the complete request, including redirects.                                                                               |
+| Flag                                  | Type            | Default          | Description                                                                                                 |
+| ------------------------------------- | --------------- | ---------------- | ----------------------------------------------------------------------------------------------------------- |
+| `--http.<ID>.name`                    | string          | `<ID>`           | Name shown in logs.                                                                                         |
+| `--http.<ID>.address`                 | string          | required         | Target URL. Supports a [resolved value](resolved-values.md).                                                |
+| `--http.<ID>.address-detail`          | enum            | `origin`         | URL detail shown in logs: `origin`, `path`, `query`, or `full`.                                             |
+| `--http.<ID>.interval`                | duration        | `0`              | Delay between requests. Uses `--default-interval` when `0`.                                                 |
+| `--http.<ID>.max-attempts`            | int             | `--max-attempts` | Per-target attempt limit. `0` means unlimited.                                                              |
+| `--http.<ID>.backoff`                 | enum            | `linear`         | Retry backoff: `linear` or `exponential`.                                                                   |
+| `--http.<ID>.max-interval`            | duration        | `0`              | Maximum delay when backoff grows. `0` leaves it uncapped.                                                   |
+| `--http.<ID>.method`                  | enum            | `GET`            | `GET`, `HEAD`, `POST`, `PUT`, `PATCH`, `DELETE`, `CONNECT`, `OPTIONS`, or `TRACE`.                          |
+| `--http.<ID>.header`                  | string list     | empty            | Header in `KEY=VALUE` format. Repeat for multiple headers. Values support [resolution](resolved-values.md). |
+| `--http.<ID>.allow-duplicate-headers` | bool            | `false`          | Preserve repeated headers with the same name.                                                               |
+| `--http.<ID>.expected-status-codes`   | int list/ranges | `200`            | Accepted statuses, such as `200,204,301-302`.                                                               |
+| `--http.<ID>.follow-redirects`        | bool            | `true`           | Follow redirects before validating the response.                                                            |
+| `--http.<ID>.max-redirects`           | int             | `10`             | Maximum redirects to follow. `0` disables following.                                                        |
+| `--http.<ID>.skip-tls-verify`         | bool            | `false`          | Disable TLS certificate verification.                                                                       |
+| `--http.<ID>.timeout`                 | duration        | `2s`             | Timeout for the complete request, including redirects.                                                      |
 
 ## Example
 
@@ -85,3 +85,7 @@ The default `origin` detail logs only the URL scheme and host. `path` includes t
 ## Proxies
 
 The HTTP checker honors Go's standard `HTTP_PROXY`, `HTTPS_PROXY`, and `NO_PROXY` environment variables.
+
+## Retry backoff
+
+Set `backoff=exponential` to double the retry delay after each failure, starting with the configured interval. Use `max-interval` to cap the delay. See [retry timing](../behavior.md#retry-timing) for a worked example.
