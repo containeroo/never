@@ -3,6 +3,8 @@ package cli
 import (
 	"testing"
 
+	"github.com/containeroo/resolver"
+
 	"github.com/containeroo/never/internal/testutils"
 
 	"github.com/stretchr/testify/assert"
@@ -97,21 +99,29 @@ func TestValidateTCPAddress(t *testing.T) {
 	})
 }
 
-// TestIsResolvableValue verifies supported resolver prefixes are recognized.
-func TestIsResolvableValue(t *testing.T) {
-	t.Parallel()
+// TestValidateResolverReferences verifies address validation follows the resolver registry.
+func TestValidateResolverReferences(t *testing.T) {
+	t.Run("HTTP accepts secret reference", func(t *testing.T) {
+		assert.NoError(t, validateHTTPAddress("secret:/run/secrets/address"))
+	})
 
-	for _, value := range []string{
-		"env:TARGET",
-		"file:/config/app.txt//Target",
-		"json:/config/app.json//target",
-		"yaml:/config/app.yaml//target",
-		"ini:/config/app.ini//Target.Address",
-	} {
-		assert.True(t, isResolvableValue(value), value)
-	}
+	t.Run("TCP accepts TOML reference", func(t *testing.T) {
+		assert.NoError(t, validateTCPAddress("toml:/config/app.toml//database.address"))
+	})
 
-	assert.False(t, isResolvableValue("http://example.com"))
+	t.Run("ICMP accepts literal reference", func(t *testing.T) {
+		assert.NoError(t, validateICMPAddress("literal:example.com"))
+	})
+
+	t.Run("custom registration is recognized without resolution", func(t *testing.T) {
+		resolver.RegisterResolver("never-test-custom:", resolver.ResolverFunc(func(string) (string, error) {
+			t.Error("address validation must not resolve references")
+			return "", nil
+		}))
+		assert.NoError(t, validateHTTPAddress("never-test-custom:address"))
+		assert.NoError(t, validateTCPAddress("never-test-custom:address"))
+		assert.NoError(t, validateICMPAddress("never-test-custom:address"))
+	})
 }
 
 // TestIsHostnameLike verifies hostname validation edge cases.

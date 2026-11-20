@@ -120,7 +120,7 @@ func resolveTargetAddress(value string, validate func(string) error) (string, er
 	}
 
 	address = strings.TrimSpace(address)
-	if isResolvableValue(raw) {
+	if resolver.CanResolve(raw) {
 		if err := validate(address); err != nil {
 			return "", err
 		}

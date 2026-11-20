@@ -7,12 +7,14 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+
+	"github.com/containeroo/resolver"
 )
 
 // validateHTTPAddress validates HTTP target addresses and resolver references.
 func validateHTTPAddress(s string) error {
 	s = strings.TrimSpace(s)
-	if isResolvableValue(s) {
+	if resolver.CanResolve(s) {
 		return nil
 	}
 
@@ -35,7 +37,7 @@ func validateResolvedHTTPAddress(s string) error {
 // validateICMPAddress validates ICMP target addresses and resolver references.
 func validateICMPAddress(s string) error {
 	s = strings.TrimSpace(s)
-	if isResolvableValue(s) {
+	if resolver.CanResolve(s) {
 		return nil
 	}
 
@@ -68,7 +70,7 @@ func validateResolvedICMPAddress(s string) error {
 // validateTCPAddress validates TCP target addresses and resolver references.
 func validateTCPAddress(s string) error {
 	s = strings.TrimSpace(s)
-	if isResolvableValue(s) {
+	if resolver.CanResolve(s) {
 		return nil
 	}
 
@@ -92,17 +94,6 @@ func validateResolvedTCPAddress(s string) error {
 	}
 
 	return nil
-}
-
-// isResolvableValue reports whether s uses one of resolver's supported prefixes.
-func isResolvableValue(s string) bool {
-	for _, prefix := range [...]string{"env:", "file:", "json:", "yaml:", "ini:"} {
-		if strings.HasPrefix(s, prefix) {
-			return true
-		}
-	}
-
-	return false
 }
 
 // isHostnameLike reports whether s is an ASCII hostname without scheme, port, or path.
